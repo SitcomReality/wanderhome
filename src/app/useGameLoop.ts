@@ -6,7 +6,7 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>, game
   useEffect(() => {
     const cv = canvasRef.current!;
     const ctx = cv.getContext('2d')!;
-    let raf = 0, last = performance.now();
+    let raf = 0, last = performance.now(), frames = 0;
     const dpr = () => Math.min(2, window.devicePixelRatio || 1);
     const resize = () => { cv.width = Math.floor(cv.clientWidth * dpr()); cv.height = Math.floor(cv.clientHeight * dpr()); };
     resize();
@@ -17,6 +17,10 @@ export function useGameLoop(canvasRef: RefObject<HTMLCanvasElement | null>, game
       g.dpr = dpr();
       g.update(dt);
       g.render(ctx, cv.width, cv.height);
+      if (frames++ === 0) {
+        (window as Window & { __APP_READY__?: boolean }).__APP_READY__ = true;
+        window.dispatchEvent(new CustomEvent('app-ready'));
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

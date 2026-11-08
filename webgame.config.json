@@ -4,6 +4,7 @@
   "serve": { "root": "dist", "port": 0 },
   "viewport": { "width": 1280, "height": 720, "dpr": 1 },
   "timeoutMs": 30000,
+  "ready": "window.__APP_READY__ === true",
   "artifacts": ".artifacts/webgame",
   "engine": "auto",
   "expect": {
