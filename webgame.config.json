@@ -1,0 +1,20 @@
+{
+  "name": "Wanderhome",
+  "url": "/",
+  "serve": { "root": "dist", "port": 0 },
+  "viewport": { "width": 1280, "height": 720, "dpr": 1 },
+  "timeoutMs": 30000,
+  "artifacts": ".artifacts/webgame",
+  "engine": "auto",
+  "expect": {
+    "noPageErrors": true,
+    "consoleErrors": "warn",
+    "noExternalRequests": true
+  },
+  "steps": [
+    { "name": "title", "assert": "!!document.querySelector('h1')", "screenshot": "title.png" },
+    { "name": "begin", "eval": "[...document.querySelectorAll('button')].find(b => b.textContent.includes('Begin'))?.click()" },
+    { "name": "settle", "sleep": 2000 },
+    { "name": "play", "assertCanvas": { "selector": "canvas", "minPainted": 10000 }, "screenshot": "play.png" }
+  ]
+}
