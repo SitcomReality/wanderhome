@@ -2,7 +2,7 @@
 
 A cozy idle game about a tiny home on wheels. It drives itself, harvests, trades, fights the occasional critter, and keeps rolling while you live your life. You can nudge it, rebuild it, repaint it, retire it, and start the next generation of the family.
 
-This is the canonical build. The earlier `wanderhaus` monolith and the alternate LMArena `wanderhome` branch are archived under [`_archive/idle-lineage/`](../_archive/idle-lineage/) and should not be resumed.
+This is the canonical build. The earlier `wanderhaus` monolith and the alternate LMArena `wanderhome` branch are archived under [`_archive/idle-lineage/`](../_archive/idle-lineage/) and should not be resumed. The full decision record is in [`IDLE-CONSOLIDATION.md`](../_game-audit/IDLE-CONSOLIDATION.md).
 
 ## Run it
 
