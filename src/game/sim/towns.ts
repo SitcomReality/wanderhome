@@ -218,7 +218,13 @@ export function makeRumor(g: Game, t: { x: number; y: number }) {
 
 export function updateDock(g: Game, dt: number) {
   let dock: Town | null = null;
-  for (const t of g.nearTowns) if (Math.hypot(t.x - g.v.x, t.y - g.v.y) < 48) { dock = t; break; }
+  for (const t of g.nearTowns) {
+    const gate = g.townApproach(t);
+    if (!gate) continue;
+    const d = Math.hypot(t.x - g.v.x, t.y - g.v.y);
+    const edge = Math.abs(gate.x - t.x) > 0.5 || Math.abs(gate.y - t.y) > 0.5;
+    if (d < 48 || (edge && Math.hypot(gate.x - g.v.x, gate.y - g.v.y) < 30)) { dock = t; break; }
+  }
   g.docked = dock;
   if (dock) {
     if (g.lastDockKey !== dock.key) {

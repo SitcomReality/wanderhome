@@ -2,14 +2,50 @@
 import type { Game } from '../engine';
 import { TAU } from '../core/constants';
 import { LOCO, RES_LIST } from '../../content/index';
-import { Town } from '../world/world';
 
 export function hasSellable(g: Game) { return RES_LIST.some((r) => g.autoSellRes[r] && g.sellable(r) >= 1); }
 
-export function townReachable(g: Game, t: { x: number; y: number }) {
-  if (g.terrMult(t.x, t.y) > 0) return true;
-  for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU; if (g.terrMult(t.x + Math.cos(a) * 32, t.y + Math.sin(a) * 32) > 0) return true; }
-  return false;
+/** A point with enough elbow room around it for the house, not just one walkable pixel. */
+function openAt(g: Game, x: number, y: number) {
+  if (g.terrMult(x, y) <= 0) return false;
+  const r = 8;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * TAU;
+    if (g.terrMult(x + Math.cos(a) * r, y + Math.sin(a) * r) <= 0) return false;
+  }
+  return true;
+}
+
+/** Closest roomy, drivable point to (x,y), searched outward from the target. */
+export function walkableNear(g: Game, x: number, y: number, maxR = 64) {
+  if (openAt(g, x, y)) return { x, y };
+  for (let r = 8; r <= maxR; r += 8) {
+    const steps = Math.max(12, Math.ceil((TAU * r) / 6));
+    let best: { x: number; y: number } | null = null, bd = Infinity;
+    for (let i = 0; i < steps; i++) {
+      const a = (i / steps) * TAU;
+      const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+      if (!openAt(g, px, py)) continue;
+      const d = Math.hypot(px - g.v.x, py - g.v.y);
+      if (d < bd) { bd = d; best = { x: px, y: py }; }
+    }
+    if (best) return best;
+  }
+  return null;
+}
+
+/** Towns are met at a drivable edge when the centre itself is unreachable. Cached per locomotion. */
+export function townApproach(g: Game, t: { key: string; x: number; y: number }) {
+  const ck = t.key + ':' + g.loco;
+  if (ck in g.townGates) return g.townGates[ck];
+  const pt = walkableNear(g, t.x, t.y, 64);
+  g.townGates[ck] = pt;
+  return pt;
+}
+
+export function townReachable(g: Game, t: { key?: string; x: number; y: number }) {
+  if (t.key) return !!townApproach(g, { key: t.key, x: t.x, y: t.y });
+  return !!walkableNear(g, t.x, t.y, 64);
 }
 
 export function lineClear(g: Game, x0: number, y0: number, x1: number, y1: number) {
@@ -60,15 +96,14 @@ export function giveUp(g: Game, key: string) {
 
 export function pickTradeTown(g: Game) {
   const v = g.v;
-  let best: Town | null = null, bd = 1e9;
-  for (const t of g.world.townsNear(v.x, v.y, 5000)) {
+  const towns = g.world.townsNear(v.x, v.y, 5000)
+    .sort((a, b) => Math.hypot(a.x - v.x, a.y - v.y) - Math.hypot(b.x - v.x, b.y - v.y));
+  for (const t of towns) {
     const u = g.unreachable[t.key];
     if (u !== undefined && g.time - u < 300) continue;
-    if (!g.townReachable(t)) continue;
-    const d = Math.hypot(t.x - v.x, t.y - v.y);
-    if (d < bd) { bd = d; best = t; }
+    if (g.townReachable(t)) return t;
   }
-  return best;
+  return null;
 }
 
 export function clearAt(g: Game, a: number, dist: number) {

@@ -90,7 +90,10 @@ export function updateVehicle(g: Game, dt: number) {
         g.tradeRunT += dt;
         if (g.tradeRunT > 240) giveUp(g, 'town:' + g.tradeRun.key);
       }
-      if (g.tradeRun) target = { x: g.tradeRun.x, y: g.tradeRun.y, key: 'town:' + g.tradeRun.key };
+      if (g.tradeRun) {
+        const gate = g.townApproach(g.tradeRun) ?? g.tradeRun;
+        target = { x: gate.x, y: gate.y, key: 'town:' + g.tradeRun.key };
+      }
       else if (curious(g)) target = g.curTarget;
       else if (g.mode === 'forage' && g.harvs.length && !cargoFull) {
         g.forageT -= dt;

@@ -2,7 +2,7 @@
 import type { Game } from '../engine';
 import { sfx } from '../sfx';
 import { ResNode } from '../world/world';
-import { resetNav } from './navigation';
+import { resetNav, walkableNear } from './navigation';
 
 export function keyDown(g: Game, k: string) {
   k = k.toLowerCase();
@@ -79,10 +79,13 @@ export function rightClick(g: Game, sx: number, sy: number, W: number, H: number
 }
 
 export function setWaypoint(g: Game, wx: number, wy: number) {
-  g.waypoint = { x: wx, y: wy }; g.manual = false; g.tradeRun = null;
+  const spot = walkableNear(g, wx, wy, 64);
+  if (!spot) { g.addLog("The house can't find a way onto that ground.", '#ff8a80'); return; }
+  if (Math.hypot(spot.x - wx, spot.y - wy) > 8) g.addLog('📍 Waypoint moved to the nearest open ground.', '#7fd1e8');
+  g.waypoint = spot; g.manual = false; g.tradeRun = null;
   g.parked = false; g.parkUntil = 0;
   resetNav(g, '');
-  g.burst(wx, wy, 8, ['#7fd1e8', '#fff'], 40, 0.5, 1.4);
+  g.burst(spot.x, spot.y, 8, ['#7fd1e8', '#fff'], 40, 0.5, 1.4);
 }
 
 export function zoomBy(g: Game, d: number) {

@@ -102,6 +102,8 @@ export class Game {
   /** Transient town-watch cooldowns & chatter throttles, keyed by town key. */
   townDefCd: Record<string, number> = {};
   townDefLog: Record<string, number> = {};
+  /** Transient approach points for towns that sit on unreachable ground, keyed by town + locomotion. */
+  townGates: Record<string, { x: number; y: number } | null> = {};
   log: LogMsg[] = [];
   lastInput = 0;
   keys = new Set<string>();
@@ -307,7 +309,8 @@ export class Game {
 
   // ---- sim/navigation ----
   hasSellable() { return Navigation.hasSellable(this); }
-  townReachable(t: { x: number; y: number }) { return Navigation.townReachable(this, t); }
+  townReachable(t: { key?: string; x: number; y: number }) { return Navigation.townReachable(this, t); }
+  townApproach(t: { key: string; x: number; y: number }) { return Navigation.townApproach(this, t); }
 
   // ---- sim/avatar ----
   exitVehicle() { return Avatar.exitVehicle(this); }

@@ -15,7 +15,7 @@ export function curious(g: Game) {
     const bl = g.nodeBlacklist.get('lm:' + lm.key);
     if (bl !== undefined && g.time - bl < 300) continue;
     const d = Math.hypot(lm.x - g.v.x, lm.y - g.v.y);
-    if (d < bd && g.townReachable(lm)) { bd = d; best = lm; }
+    if (d < bd && g.terrMult(lm.x, lm.y) > 0) { bd = d; best = lm; }
   }
   if (best) g.curTarget = { x: best.x, y: best.y, key: 'lm:' + best.key };
   return !!best;

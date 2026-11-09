@@ -43,6 +43,12 @@ Manual waypoints park the house when it arrives, instead of immediately wanderin
 its own, so autopilot can never be left off by accident. Opening a town's panel while
 docked also parks it, giving you time to browse.
 
+Destinations respect the current locomotion. A waypoint snaps to the nearest open ground
+instead of landing in water or on a cliff, curiosities whose centre is unreachable are
+skipped, and a town whose centre the current locomotion cannot cross is met at a drivable
+edge gate. The house may still hug a coastline while looking for a way around, but it no
+longer commits to a spot it can never stand on.
+
 **Supplies & plans (I)** can be opened anywhere, not just in town. Each resource has a
 **Lock** (a floor that is never auto-sold) and a **Collect up to** limit (an upper bound
 where the house stops gathering it). A **plan** is a specific known part, frame,
