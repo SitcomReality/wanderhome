@@ -5,7 +5,7 @@
  */
 import type { OfflineReport } from './sim/offline';
 import { CELL, DAY, SAVE_KEY, TAU, nominalSpeed, noCaps, zeroRes } from './core/constants';
-import { ActiveBuff, Beam, Bolt, BuildGoal, Cloud, DayPhase, DriveMode, HarvState, KnownTown, LogMsg, Mob, Particle, Pickup, Popup, ProcState, Projectile, Resident, Rumor, Settings, Spoils, VisitedMark, WeaponState } from './core/types';
+import { ActiveBuff, Beam, Bolt, BuildGoal, Cloud, DayPhase, DriveMode, HarvState, KnownTown, LogMsg, Mob, Particle, Pickup, Popup, ProcState, Projectile, Resident, ResidentMemory, Rumor, Settings, Spoils, TownCat, VisitedMark, WeaponState } from './core/types';
 import { BIOME, BuffDef, BuffStat, Cost, GRID_MAX_H, GRID_MAX_W, MobDef, RES_INFO, RES_LIST, Res, STARTER_PARTS, Terrain, locoSpeed } from '../content/index';
 import { ActiveVisitor, Crew, Toast, applyNewRunPerks, extraCargo, extraComfort, legacyTick, meta, onDiscover, permMul, syncBook } from './family/index';
 import { hashString } from './world/noise';
@@ -114,6 +114,10 @@ export class Game {
   residentChatterT = 45;
   residentGreeted = false;
   residentPhase: DayPhase = 'day';
+  residentMemory: ResidentMemory = { visits: 0, honks: 0, firstDay: -1, lastDay: -1, lastVisit: 0, lastHonk: 0 };
+  townCat: TownCat | null = null;
+  residentHonkLog = 0;
+  residentWatchReact = 0;
   settlementPlans: Record<string, SettlementPlan> = {};
   log: LogMsg[] = [];
   lastInput = 0;
@@ -324,6 +328,9 @@ export class Game {
   townReachable(t: { key?: string; x: number; y: number }) { return Navigation.townReachable(this, t); }
   townApproach(t: { key: string; x: number; y: number }) { return Navigation.townApproach(this, t); }
   settlementPlan(t: Town) { return (this.settlementPlans[t.key] ??= Settlement.planSettlement(this, t)); }
+  residentsHonk() { return Residents.onHonk(this); }
+  residentsWatchFire(t: Town, x: number, y: number) { return Residents.onWatchFire(this, t, x, y); }
+  residentsVisit() { return Residents.onVisit(this); }
 
   // ---- sim/avatar ----
   exitVehicle() { return Avatar.exitVehicle(this); }

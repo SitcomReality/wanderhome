@@ -9,10 +9,10 @@ import { validGoal } from './plan';
 export function save(g: Game) {
   if ((globalThis as any).__wanderhausNoSave) return;
   const data = {
-    v: 4, gen: meta.generation, seedStr: g.seedStr, coins: g.coins, res: g.res, keep: g.keep, collectCap: g.collectCap, goal: g.goal, seenRes: g.seenRes, gridW: g.gridW, gridH: g.gridH, grid: g.grid,
+    v: 5, gen: meta.generation, seedStr: g.seedStr, coins: g.coins, res: g.res, keep: g.keep, collectCap: g.collectCap, goal: g.goal, seenRes: g.seenRes, gridW: g.gridW, gridH: g.gridH, grid: g.grid,
     loco: g.loco, ownedLocos: g.ownedLocos, frame: g.frame, ownedFrames: g.ownedFrames, known: g.known, pins: g.pins, rumors: g.rumors,
     vx: g.v.x, vy: g.v.y, angle: g.v.angle, hp: g.v.hp,
-    settings: g.settings, stats: g.stats, towns: g.towns, townSat: g.townSat, autoSellRes: g.autoSellRes,
+    settings: g.settings, stats: g.stats, towns: g.towns, townSat: g.townSat, autoSellRes: g.autoSellRes, residentMemory: g.residentMemory,
     rates: g.rates, mode: g.mode, headingAngle: g.headingAngle, time: g.time, lastSave: Date.now(),
     visited: g.visited, buffs: g.buffs.map((b) => ({ ...b, left: b.until - g.time })),
     runBiomes: g.runBiomes, biomeTime: g.biomeTime, crew: g.crew ? { ...g.crew, left: g.crew.until - g.time } : null,
@@ -69,6 +69,16 @@ export function applySave(g: Game, s: any) {
   g.buffs = (s.buffs ?? []).filter((b: any) => b.left > 0).map((b: any) => ({ id: b.id, name: b.name, icon: b.icon, stat: b.stat, mult: b.mult, until: g.time + b.left }));
   // visitor that was waiting when the game was saved (it resolves itself, positively, once play resumes)
   g.visitor = s.visitor && typeof s.visitor.left === 'number' && s.visitor.kind ? { ...s.visitor, expires: g.time + Math.max(0, s.visitor.left) } : null;
+  const mem = s.residentMemory ?? {};
+  const num = (v: any, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback);
+  g.residentMemory = {
+    visits: Math.max(0, Math.floor(num(mem.visits, 0))),
+    honks: Math.max(0, Math.floor(num(mem.honks, 0))),
+    firstDay: Math.floor(num(mem.firstDay, -1)),
+    lastDay: Math.floor(num(mem.lastDay, -1)),
+    lastVisit: num(mem.lastVisit, 0),
+    lastHonk: num(mem.lastHonk, 0),
+  };
   if (g.visitor) delete (g.visitor as any).left;
   applyOfflineProgress(g, typeof s.lastSave === 'number' ? s.lastSave : Date.now(), { advanceWorld: true, minSeconds: 60 });
 }

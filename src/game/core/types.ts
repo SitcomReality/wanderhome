@@ -39,7 +39,7 @@ export interface BuildGoal { kind: BuildGoalKind; id: string }
 
 // ---------------------------------------------------------------- residents
 export type DayPhase = 'day' | 'dusk' | 'night';
-export type ResidentState = 'walk' | 'work' | 'play' | 'gather' | 'rest' | 'social' | 'home' | 'loot' | 'flee';
+export type ResidentState = 'walk' | 'work' | 'play' | 'gather' | 'rest' | 'social' | 'react' | 'home' | 'loot' | 'flee';
 /** A transient person in the active settlement. The first slice only populates Homeport. */
 export interface Resident {
   def: ResidentDef;
@@ -47,7 +47,7 @@ export interface Resident {
   tx: number; ty: number;
   home: { x: number; y: number };
   activity: string;
-  spot: 'home' | 'field' | 'workshop' | 'well' | 'green' | 'watch' | 'wild';
+  spot: 'home' | 'field' | 'workshop' | 'well' | 'green' | 'watch' | 'wild' | 'gate';
   state: ResidentState;
   phase: DayPhase;
   walk: number;
@@ -61,17 +61,48 @@ export interface Resident {
   /** the current day's routine, derived from day + seed (not saved) */
   day: number;
   workX: number; workY: number;
-  workSpot: 'home' | 'field' | 'workshop' | 'well' | 'green' | 'watch' | 'wild';
+  workSpot: 'home' | 'field' | 'workshop' | 'well' | 'green' | 'watch' | 'wild' | 'gate';
   workActivity: string;
   breakAt: number; breakUntil: number; breakFor: number;
   breakX: number; breakY: number;
-  breakSpot: 'home' | 'field' | 'workshop' | 'well' | 'green' | 'watch' | 'wild';
+  breakSpot: 'home' | 'field' | 'workshop' | 'well' | 'green' | 'watch' | 'wild' | 'gate';
   wanderAt: number;
   /** what this walk ends in, so a break or a potter can have its own arrival pose */
   nextState: ResidentState;
   nextActivity: string;
   /** when a resident who slept through dawn actually steps outside */
   wakeAt: number;
+  /** transient reaction pose: a wave, a look, a curious inspection, or Pip's latest game */
+  reactUntil: number;
+  reactKind: 'wave' | 'look' | 'curious' | 'play' | 'startle' | null;
+  /** next chance for a trait-driven exception */
+  traitAt: number;
 }
 /** A town-watch kill outside the ring, waiting for a brave resident or a careful one. */
 export interface Spoils { x: number; y: number; t: number; claimed: boolean; hesitated: boolean }
+
+/** What Homeport remembers about the player, persisted across sessions. */
+export interface ResidentMemory {
+  visits: number;
+  honks: number;
+  firstDay: number;
+  lastDay: number;
+  lastVisit: number;
+  lastHonk: number;
+}
+
+/** The town cat. Transient, like the residents, but with strong opinions. */
+export interface TownCat {
+  name: string;
+  color: string;
+  accent: string;
+  x: number; y: number;
+  tx: number; ty: number;
+  facing: number;
+  walk: number;
+  anim: number;
+  state: 'sleep' | 'wander' | 'sit' | 'follow' | 'startle';
+  until: number;
+  nextAt: number;
+  activity: string;
+}

@@ -103,6 +103,7 @@ export function updateTownDefense(g: Game, dt: number) {
     const speed = 420;
     g.projectiles.push({ kind: 'bullet', x: ox, y: oy, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, dmg: def.damage, life: def.range / speed + 0.15, target: null, color: def.color, town: true });
     g.part(ox, oy, Math.cos(ang) * 20, Math.sin(ang) * 20, 0.12, 2.5, def.color, 1, 0, 0);
+    g.residentsWatchFire(t, best.x, best.y);
     const near = Math.hypot(g.v.x - t.x, g.v.y - t.y) < 500;
     if (near) sfx('shot', 0.35);
     if (near && (g.townDefLog[t.key] ?? -999) + 45 < g.time) {
@@ -240,6 +241,7 @@ export function updateDock(g: Game, dt: number) {
       }
       const pinned = g.townStock(dock).filter((id) => g.pins.includes(id) && !g.known.includes(id));
       if (pinned.length) g.addLog(`📌 ${dock.name} sells your wishlisted ${pinned.map((p) => PART[p].name).join(', ')}!`, '#7fd1e8');
+      if (dock.key === 'home') g.residentsVisit();
       if (g.tradeRun && g.tradeRun.key === dock.key) {
         g.dockPause = 3;
         const got = g.autoSellNow(dock);

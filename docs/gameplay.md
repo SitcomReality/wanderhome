@@ -65,6 +65,14 @@ walkers rather than pathfinders, but they no longer stand in one spot like garde
 ornaments: Mira works a hoe through the rows, Tobin taps at something small, Pip runs
 about, and Sable paces the watchtower.
 
+Their traits now break the routine too. Tobin gets curious about the parked house and its
+wheels, Pip follows Sable or chases a beetle, Sable walks a patrol to the gate, and Mira
+sizes up anything dangerous near the edge of town. They also react: honking the horn gets
+waves, a town-watch shot makes everyone outside look toward the tower, and the cat bolts.
+Homeport remembers the player's visits and honks in the run save; a familiar face gets a
+personal line when the house rolls back in. Biscuit the cat sleeps by the well, follows
+Sable on night watch, and treats Pip as a natural disaster.
+
 A town-watch kill outside the safe ring leaves spoils. Mira is bold enough to sprint for
 them if the coast is clear; if a critter is still nearby she hesitates, and if one gets
 close while she is running she abandons the idea and heads home for a while. Nobody dies
@@ -89,7 +97,7 @@ also pull in the inputs for any installed processor that makes them.
 | Combat | weapons, projectiles, critters, damage, temporary breakdowns | `game/sim/weapons.ts`, `critters.ts` |
 | Towns and trade | docking, prices, stock, blueprints, rumours, auto-sell | `game/sim/towns.ts` |
 | Town watch | static town defenses, safe zones, no spawns near settlements | `game/sim/towns.ts` |
-| Residents | Homeport's first-slice schedules, walking and town-watch spoils | `game/sim/residents.ts`, `game/world/settlement.ts` |
+| Residents | Homeport's schedules, traits, reactions, memory and town-watch spoils | `game/sim/residents.ts`, `game/world/settlement.ts` |
 | Parking | timed stops, waypoint arrivals, town browsing | `game/sim/rest.ts` |
 | Supplies & plans | per-resource collection limits, build goals, plan-aware sell protection and foraging | `game/sim/plan.ts` |
 | Workshop | grid placement, synergies, locomotion/frames, expansion | `game/sim/workshop.ts`, `vehicleStats.ts` |

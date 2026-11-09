@@ -42,6 +42,7 @@ export function action(g: Game) {
     }
     g.popup(g.v.x, g.v.y - g.hh - 8, 'HONK!', '#ffd166', true);
     g.shake(3); sfx('zap', 0.5);
+    g.residentsHonk();
     return;
   }
   if (a.swingCd > 0) return;

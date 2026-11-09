@@ -99,7 +99,7 @@ stop autosave and unload handlers from writing the test run to the browser profi
 
 ## What to check manually
 
-- **Old saves:** load a save from the previous version; no crash, sensible defaults.
+- **Old saves:** load a save from the previous version; no crash, sensible defaults. A v4 save must migrate to v5 with empty resident memory; a v5 save must round-trip `residentMemory`.
 - **Offline:** hide the tab or reload after a wait; the report appears once and time is not
   credited twice.
 - **Retirement:** retire when eligible; family data persists, lifetime totals count once,
@@ -119,8 +119,10 @@ stop autosave and unload handlers from writing the test run to the browser profi
 - **Homeport residents:** watch the four residents leave in the morning and return at night.
   They should potter around their work spots, take seated breaks, and occasionally visit another
   part of town. Sable should stay on the watchtower; the town panel should list each person's
-  current activity. Let a day roll over and confirm work spots/break times are not identical.
-  Put a critter inside the town watch's range, let the watch kill it, and confirm Mira may sprint
-  for the spoils, or sensibly decide not to if another critter is close.
+  current activity and Biscuit's. Let a day roll over and confirm work spots/break times are not
+  identical. Honk while docked and confirm waves; let the town watch fire and confirm residents
+  look toward the tower and Biscuit bolts. Leave and return to Homeport; a resident should
+  remember the visit. Put a critter inside the town watch's range, let the watch kill it, and
+  confirm Mira may sprint for the spoils, or sensibly decide not to if another critter is close.
 
 See [saves.md](saves.md) for the save-specific cases.

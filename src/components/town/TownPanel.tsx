@@ -39,7 +39,7 @@ export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => 
         <div className="mb-3 rounded-xl border border-amber-300/15 bg-amber-400/5 px-2.5 py-2">
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <span className="text-[10px] font-black uppercase tracking-wider text-amber-200/90">🏡 Around Homeport</span>
-            <span className="text-[10px] text-stone-500">{game.residentPhase === 'night' ? '🌙 mostly in for the night' : '☀️ out and about'}</span>
+            <span className="text-[10px] text-stone-500" title={`Visits: ${game.residentMemory.visits} · honks: ${game.residentMemory.honks}`}>{game.residentPhase === 'night' ? '🌙 mostly in for the night' : '☀️ out and about'}{game.residentMemory.visits > 1 ? ' · 👋 familiar' : ''}</span>
           </div>
           <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
             {residents.map((r) => (
@@ -49,6 +49,12 @@ export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => 
               </div>
             ))}
           </div>
+          {game.townCat && (
+            <div className="mt-1 flex items-baseline gap-1.5 border-t border-white/5 pt-1 text-[11px]">
+              <b className="shrink-0 text-amber-200">🐈 {game.townCat.name}</b>
+              <span className="truncate text-stone-400">{game.townCat.activity}</span>
+            </div>
+          )}
         </div>
       )}
 

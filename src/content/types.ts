@@ -151,4 +151,10 @@ export interface ResidentDef {
   color: string; accent: string;
   /** a quiet line logged now and then while the player is nearby */
   line: string;
+  /** a line for a return visit, once the player is a familiar face */
+  remember: string;
 }
+
+
+/** A small animal that lives in the active settlement. */
+export interface CatDef { name: string; color: string; accent: string; }

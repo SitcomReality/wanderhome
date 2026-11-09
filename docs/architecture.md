@@ -105,7 +105,7 @@ src/
       weapons.ts                firing, damage, explosions
       critters.ts               mob spawning and AI
       towns.ts                  docking, prices, stock, blueprints, rumours
-      residents.ts              one active settlement's schedules, walking, loot runs
+      residents.ts              one active settlement's schedules, traits, reactions, memory, cat
       exploration.ts            landmark visits and buffs
       effects.ts                particles, popups, camera shake
       input.ts                  keys, clicks, waypoints, zoom
@@ -118,7 +118,7 @@ src/
       minimap.ts                minimap canvas
     art/                      procedural drawings, no assets
       primitives.ts             low-level shapes
-      nodeArt.ts / landmarkArt.ts / mobArt.ts / townArt.ts / residentArt.ts
+      nodeArt.ts / landmarkArt.ts / mobArt.ts / townArt.ts / residentArt.ts / catArt.ts
       houseArt.ts / locoArt.ts / frameArt.ts / turretArt.ts / avatarArt.ts
       postcardArt.ts / moduleArt.ts / partIcon.ts
       parts/<category>.ts       per-part artwork, keyed by part id (cargo, comfort, core,

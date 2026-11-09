@@ -25,14 +25,14 @@ Backup keys are written before destructive operations:
 Follow this pattern for any new destructive action: copy the old value first, never silently
 discard player data.
 
-## Run save (version 4)
+## Run save (version 5)
 
 - Written by `game/sim/persistence.ts → save()` every 10 s, on tab hide/unload, and at key
   transitions (start, new game, retirement).
 - Shape: `v`, `gen`, `seedStr`, coins/resources/`keep`, `collectCap`, `goal`, `seenRes`, grid
   dimensions and cells, locomotion/frame and owned ones, `known`, `pins`, `rumours`, vehicle
-  position/HP, settings, stats, towns, rates, `time`, `lastSave`, `visited`, buffs, run
-  biomes/time, crew, and any waiting visitor. `save()` is the authoritative list.
+  position/HP, settings, stats, towns, `residentMemory`, rates, `time`, `lastSave`, `visited`,
+  buffs, run biomes/time, crew, and any waiting visitor. `save()` is the authoritative list.
 - `collectCap` is a per-resource upper collection limit (`-1` = no limit). `goal` is a
   content-id reference (`kind` + `id`) to the active build plan; its cost is derived from
   content, not stored. Parking (`parked`/`parkUntil`), town-watch cooldowns, resident

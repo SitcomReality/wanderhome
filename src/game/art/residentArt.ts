@@ -52,10 +52,33 @@ export function drawResident(ctx: C, r: Resident, t: number) {
     drawWatcher(ctx, r, x, y, t);
   }
 
+  if (r.state === 'react') drawReaction(ctx, r, x, y, t);
+
   if (r.state === 'loot') {
     ctx.fillStyle = '#ffd166'; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('!', x, y - 15);
     ctx.fillStyle = '#8d6e63'; ctx.fillRect(x - 4, y - 4.5, 2.4, 2.4);
+  }
+}
+
+function drawReaction(ctx: C, r: Resident, x: number, y: number, t: number) {
+  if (r.reactKind === 'wave') {
+    const wave = Math.sin(t * 9 + r.seed) * 0.8;
+    ctx.fillStyle = r.def.color; ctx.fillRect(x + 2.4, y - 8.5, 1, 3.2);
+    ctx.fillStyle = '#f0c9a4';
+    ctx.beginPath(); ctx.arc(x + 3 + wave, y - 9.3, 1.1, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ffe8a3'; ctx.font = '6px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('·', x + 3 + wave, y - 12);
+  } else if (r.reactKind === 'look') {
+    ctx.fillStyle = '#f0c9a4';
+    ctx.fillRect(x + 2.7, y - 10, 2, 0.9);
+    ctx.fillStyle = '#3a2d28'; ctx.fillRect(x + 4.3, y - 10.2, 0.6, 0.6);
+  } else if (r.reactKind === 'curious') {
+    ctx.fillStyle = '#ffe8a3'; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('?', x - 4, y - 14);
+  } else if (r.reactKind === 'play') {
+    ctx.fillStyle = '#ffd166'; ctx.font = 'bold 7px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('!', x + 4, y - 14);
   }
 }
 

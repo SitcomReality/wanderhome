@@ -7,6 +7,7 @@ import { drawMob } from '../art/mobArt';
 import { drawShadow } from '../art/primitives';
 import { drawTown } from '../art/townArt';
 import { drawResident } from '../art/residentArt';
+import { drawCat } from '../art/catArt';
 import { drawLandmark } from '../art/landmarkArt';
 import { drawSkyFx } from '../art/houseArt';
 import { drawNode } from '../art/nodeArt';
@@ -71,6 +72,7 @@ export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: num
     if (r.x < x0 || r.x > x1 || r.y < y0 || r.y > y1) continue;
     drawResident(ctx, r, t);
   }
+  if (g.townCat && g.townCat.x > x0 && g.townCat.x < x1 && g.townCat.y > y0 && g.townCat.y < y1) drawCat(ctx, g.townCat, t);
 
   for (const p of g.pickups) {
     const bob = Math.sin(t * 6 + p.x) * 1;
