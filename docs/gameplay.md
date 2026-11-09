@@ -52,10 +52,18 @@ longer commits to a spot it can never stand on.
 ### Homeport's people (first slice)
 
 Homeport is the first settlement with residents. Four of them have names, roles and
-simple schedules: Mira tends the bean rows, Tobin mends things at the workshop, Pip plays
-on the green, and Sable keeps the watchtower. In the morning they leave their houses; at
-dusk they gather at the well; at night most go indoors, while Sable keeps watch. Their
-current activity is listed in Homeport's town panel.
+loose daily routines: Mira tends the bean rows, Tobin mends things at the workshop, Pip
+plays on the green, and Sable keeps the watchtower. In the morning they leave their houses
+at staggered times; during the day they potter around their work, take breaks at the well
+or green, and sometimes make a small side trip somewhere else in town. At dusk they gather
+at the well; at night most go indoors, while Sable keeps watch. Their current activity is
+listed in Homeport's town panel.
+
+The routines are seeded by the in-game day, so the next morning is not an exact repeat:
+work spots, break times and the occasional side trip change. They are still lightweight
+walkers rather than pathfinders, but they no longer stand in one spot like garden
+ornaments: Mira works a hoe through the rows, Tobin taps at something small, Pip runs
+about, and Sable paces the watchtower.
 
 A town-watch kill outside the safe ring leaves spoils. Mira is bold enough to sprint for
 them if the coast is clear; if a critter is still nearby she hesitates, and if one gets

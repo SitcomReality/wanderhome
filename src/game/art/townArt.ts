@@ -65,6 +65,8 @@ function drawField(ctx: C, x: number, y: number, seed: number) {
   }
   ctx.fillStyle = '#7a5a3a';
   for (let i = -20; i <= 20; i += 9) { ctx.fillRect(x + i, y - 15, 1.2, 4); ctx.fillRect(x + i, y + 11, 1.2, 4); }
+  ctx.strokeStyle = 'rgba(122,90,58,0.8)'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(x - 19, y - 13); ctx.lineTo(x + 19, y - 13); ctx.moveTo(x - 19, y + 13); ctx.lineTo(x + 19, y + 13); ctx.stroke();
 }
 
 function drawWell(ctx: C, x: number, y: number) {

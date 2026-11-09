@@ -39,7 +39,7 @@ export interface BuildGoal { kind: BuildGoalKind; id: string }
 
 // ---------------------------------------------------------------- residents
 export type DayPhase = 'day' | 'dusk' | 'night';
-export type ResidentState = 'walk' | 'work' | 'play' | 'gather' | 'social' | 'home' | 'loot' | 'flee';
+export type ResidentState = 'walk' | 'work' | 'play' | 'gather' | 'rest' | 'social' | 'home' | 'loot' | 'flee';
 /** A transient person in the active settlement. The first slice only populates Homeport. */
 export interface Resident {
   def: ResidentDef;
@@ -51,11 +51,27 @@ export interface Resident {
   state: ResidentState;
   phase: DayPhase;
   walk: number;
+  /** animation clock for working, resting and idle fidgets */
+  anim: number;
   facing: number;
   walking: boolean;
   indoors: boolean;
   shakenUntil: number;
   seed: number;
+  /** the current day's routine, derived from day + seed (not saved) */
+  day: number;
+  workX: number; workY: number;
+  workSpot: 'home' | 'field' | 'workshop' | 'well' | 'green' | 'watch' | 'wild';
+  workActivity: string;
+  breakAt: number; breakUntil: number; breakFor: number;
+  breakX: number; breakY: number;
+  breakSpot: 'home' | 'field' | 'workshop' | 'well' | 'green' | 'watch' | 'wild';
+  wanderAt: number;
+  /** what this walk ends in, so a break or a potter can have its own arrival pose */
+  nextState: ResidentState;
+  nextActivity: string;
+  /** when a resident who slept through dawn actually steps outside */
+  wakeAt: number;
 }
 /** A town-watch kill outside the ring, waiting for a brave resident or a careful one. */
 export interface Spoils { x: number; y: number; t: number; claimed: boolean; hesitated: boolean }
