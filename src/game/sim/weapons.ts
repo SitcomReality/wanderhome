@@ -106,8 +106,8 @@ export function updateWeapons(g: Game, dt: number) {
   }
 }
 
-export function damageMob(g: Game, m: Mob, dmg: number, numbers = true) {
-  dmg *= g.buffMul('damage');
+export function damageMob(g: Game, m: Mob, dmg: number, numbers = true, buff = true) {
+  if (buff) dmg *= g.buffMul('damage');
   m.hp -= dmg; m.flash = 0.08;
   if (numbers && g.settings.dmgNumbers && dmg >= 1) g.popup(m.x + (Math.random() - 0.5) * 6, m.y - m.def.r - 4, String(Math.round(dmg)), '#ffeb99');
   if (m.hp <= 0) killMob(g, m);
@@ -189,7 +189,7 @@ export function updateProjectiles(g: Game, dt: number) {
           g.burst(p.x, p.y, 6, ['#cfd8dc', '#fff'], 50, 0.3); g.shake(1);
         } else g.burst(p.x, p.y, 3, ['#fff6a0', '#fff'], 50, 0.2, 1);
         if (p.kind !== 'harpoon') { hit.vx += p.vx * 0.05; hit.vy += p.vy * 0.05; }
-        g.damageMob(hit, p.dmg);
+        g.damageMob(hit, p.dmg, true, !p.town);
       } else if (p.kind === 'bubble') g.burst(p.x, p.y, 4, ['#bdf3ff', '#fff'], 30, 0.3, 1, 1);
       g.projectiles.splice(i, 1);
     }

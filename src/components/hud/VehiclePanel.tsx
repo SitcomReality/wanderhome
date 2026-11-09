@@ -7,16 +7,25 @@ import { TILE } from '../../game/world/world';
 import { Bar, Btn } from '../common/ui';
 import { Toggle } from './Toggle';
 
+function parkClock(game: Game) {
+  const s = Math.max(0, Math.ceil(game.parkUntil - game.time));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 /** One-line description of what the house is up to right now. */
 export function driveStatus(game: Game) {
   const v = game.v;
   let status = '';
   if (v.disabledT > 0) status = `🔧 Repairing… ${Math.ceil(v.disabledT)}s`;
-  else if (!game.av.inside) status = game.av.returning ? '💤 Wanderer heading home…' : '🚶 Parked. You are exploring on foot';
+  else if (game.parked) {
+    status = `⏸️ Parked${game.docked ? ` in ${game.docked.name}` : ''} · ${parkClock(game)} left`;
+    if (game.inTownSafeZone()) status += ' · 🛡️ town watch';
+    if (!game.av.inside) status += ' · 🚶 on foot';
+  } else if (!game.av.inside) status = game.av.returning ? '💤 Wanderer heading home…' : '🚶 On foot. The house is waiting';
   else if (game.manual) status = '🕹️ Manual driving';
   else if (game.waypoint) status = `📍 To waypoint (${Math.round(Math.hypot(game.waypoint.x - v.x, game.waypoint.y - v.y) / TILE)}t)${game.nav.follow ? ' · finding a way around…' : ''}`;
   else if (game.tradeRun) status = `🛒 Trade run → ${game.tradeRun.name}${game.nav.follow ? ' · detouring…' : ''}`;
-  else if (game.docked) status = `🏘️ Passing through ${game.docked.name}`;
+  else if (game.docked) status = `🏘️ Passing through ${game.docked.name}${game.inTownSafeZone() ? ' · 🛡️ town watch' : ''}`;
   else status = { forage: '🌿 Foraging', wander: '🍃 Wandering', heading: '🧭 Holding heading' }[game.mode];
   if (game.cargoFree() <= 0) status += ' · 📦 FULL';
   return status;
@@ -32,6 +41,7 @@ export function VehiclePanel({ game }: { game: Game }) {
   const status = driveStatus(game);
   const setMode = (m: DriveMode, ang?: number) => {
     game.mode = m; game.manual = false; game.waypoint = null;
+    game.parked = false; game.parkUntil = 0;
     if (ang !== undefined) game.headingAngle = ang;
     game.lastInput = game.time;
   };
@@ -87,6 +97,7 @@ export function VehiclePanel({ game }: { game: Game }) {
       </div>
       <div className="mt-1 flex flex-wrap gap-1">
         <Btn active={game.manual} onClick={() => game.toggleManual()}>🕹️ Drive <span className="opacity-50">T</span></Btn>
+        <Btn active={game.parked} onClick={() => game.togglePark()}>{game.parked ? '▶ Resume' : '⏸ Park'} <span className="opacity-50">P</span></Btn>
         <Btn onClick={() => game.keyDown('e')}>{game.av.inside ? '🚪 Step out' : '🏠 Board'} <span className="opacity-50">E</span></Btn>
         <Btn onClick={() => game.action()}>{game.av.inside ? '📯 Honk' : '👊 Swing'} <span className="opacity-50">Space</span></Btn>
       </div>

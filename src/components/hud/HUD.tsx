@@ -104,7 +104,7 @@ export function HUD({ game, tick, open, onHide }: { game: Game; tick: number; op
             <div className="mb-1 flex justify-between"><b className="text-amber-100">How to (not) play</b><button onClick={() => setHelp(false)} className="text-stone-500 hover:text-white">✕</button></div>
             Do nothing: your home drives, harvests, fights & trades by itself.<br />
             <b>WASD</b> walk inside · walk off the edge (or <b>E</b>) to go outside<br />
-            <b>Click</b> map: waypoint · <b>Wheel</b>: zoom · <b>T</b>: drive<br />
+            <b>Right-click</b> world (or click minimap): waypoint · <b>Wheel</b>: zoom · <b>T</b>: drive · <b>P</b>: park<br />
             <b>G</b> workshop · <b>B</b> town · <b>I</b> supplies & plans · <b>J</b> memories · <b>L</b> family · <b>H</b> hide UI
           </div>
         ) : <button onClick={() => setHelp(true)} className="rounded-full bg-black/60 px-3 py-1.5 text-xs">❔</button>}

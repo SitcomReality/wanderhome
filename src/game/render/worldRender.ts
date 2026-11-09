@@ -9,6 +9,7 @@ import { drawTown } from '../art/townArt';
 import { drawLandmark } from '../art/landmarkArt';
 import { drawSkyFx } from '../art/houseArt';
 import { drawNode } from '../art/nodeArt';
+import { TOWN_SAFE_RADIUS } from '../sim/towns';
 import { CHUNK_PX } from '../world/world';
 
 export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: number) {
@@ -43,7 +44,18 @@ export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: num
     ctx.setLineDash([]); ctx.globalAlpha = 1;
   }
 
-  for (const town of g.nearTowns) if (town.x > x0 - 60 && town.x < x1 + 60 && town.y > y0 - 60 && town.y < y1 + 60) drawTown(ctx, town, t, g.docked?.key === town.key);
+  for (const town of g.nearTowns) {
+    if (town.x < x0 - 60 || town.x > x1 + 60 || town.y < y0 - 60 || town.y > y1 + 60) continue;
+    const near = Math.hypot(town.x - g.v.x, town.y - g.v.y) < TOWN_SAFE_RADIUS;
+    const danger = g.mobs.some((m) => Math.hypot(m.x - town.x, m.y - town.y) < TOWN_SAFE_RADIUS + 20);
+    ctx.save();
+    ctx.setLineDash([4, 7]);
+    ctx.strokeStyle = danger ? 'rgba(255,209,102,0.32)' : `rgba(127,209,232,${near ? 0.22 : 0.1})`;
+    ctx.lineWidth = danger ? 1.2 : 0.7;
+    ctx.beginPath(); ctx.arc(town.x, town.y, TOWN_SAFE_RADIUS, 0, TAU); ctx.stroke();
+    ctx.restore();
+    drawTown(ctx, town, t, g.docked?.key === town.key);
+  }
   for (const lm of g.nearLandmarks) if (lm.x > x0 - 60 && lm.x < x1 + 60 && lm.y > y0 - 60 && lm.y < y1 + 80) drawLandmark(ctx, lm, t, !!g.visited[lm.key]);
 
   // world objects (all of them), then the vehicle on top
@@ -134,7 +146,7 @@ export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: num
   ctx.globalAlpha = 1;
 
   for (const p of g.projectiles) {
-    if (p.kind === 'bullet') { ctx.strokeStyle = '#fff6a0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.02, p.y - p.vy * 0.02); ctx.stroke(); }
+    if (p.kind === 'bullet') { ctx.strokeStyle = p.color ?? '#fff6a0'; ctx.lineWidth = p.town ? 1.3 : 1; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * 0.02, p.y - p.vy * 0.02); ctx.stroke(); }
     else if (p.kind === 'pebble') { ctx.fillStyle = '#ddd'; ctx.fillRect(p.x - 0.8, p.y - 0.8, 1.6, 1.6); }
     else if (p.kind === 'bubble') {
       ctx.strokeStyle = 'rgba(200,245,255,0.9)'; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, TAU); ctx.stroke();

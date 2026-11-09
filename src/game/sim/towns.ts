@@ -1,14 +1,29 @@
 // Towns: prices, markets, blueprint workshops, the price journal, rumours, docking & auto-sell.
 import type { Game } from '../engine';
 import { zeroRes } from '../core/constants';
-import { KnownTown } from '../core/types';
-import { BIOME, PART, PARTS, RES_INFO, RES_LIST, Res, TERRAIN_INFO, TIER_DIST, Terrain, biomePriceMul, describeWhere, matchesWhere, partHint } from '../../content/index';
+import type { KnownTown, Mob } from '../core/types';
+import { BIOME, MOD, PART, PARTS, RES_INFO, RES_LIST, Res, TERRAIN_INFO, TIER_DIST, Terrain, biomePriceMul, describeWhere, matchesWhere, partHint } from '../../content/index';
 import { onDiscover } from '../family/index';
 import { meta } from '../family/meta';
 import { hash2 } from '../world/noise';
 import { sfx } from '../sfx';
 import { TILE, Town } from '../world/world';
 import { goalProtect } from './plan';
+
+/** No critters spawn inside this radius of a town, and a stopped house is safe here. */
+export const TOWN_SAFE_RADIUS = 180;
+
+export interface TownDefense { name: string; range: number; damage: number; rate: number; color: string }
+
+function watchName(goods: string[]): string {
+  if (goods.includes('crystal') || goods.includes('starmetal')) return 'Prism Watch';
+  if (goods.includes('obsidian') || goods.includes('sulfur')) return 'Ash Watch';
+  if (goods.includes('iron') || goods.includes('metal')) return 'Iron Watch';
+  if (goods.includes('stone')) return 'Stone Watch';
+  if (goods.includes('bone')) return 'Bone Watch';
+  if (goods.includes('wood') || goods.includes('fiber')) return 'Timber Watch';
+  return 'Town Watch';
+}
 
 export function townDist(g: Game, t: { x: number; y: number }) { return Math.hypot(t.x - g.homeX, t.y - g.homeY) / TILE; }
 
@@ -39,6 +54,62 @@ export function townStock(g: Game, t: Town): string[] {
   }
   g.stockCache.set(t.key, out);
   return out;
+}
+
+/** A town's watch is armed from its local goods and the defensive kit it sells. */
+export function townDefense(g: Game, t: Town): TownDefense {
+  const goods = BIOME[t.biome]?.goods?.cheap ?? [];
+  let damage = 8 + t.mod * 5;
+  let range = 210 + t.mod * 20;
+  let rate = 0.9;
+  if (goods.includes('iron') || goods.includes('metal')) { damage += 4; range += 15; }
+  if (goods.includes('stone')) { damage += 2; range += 10; }
+  if (goods.includes('crystal')) { damage += 4; range += 20; }
+  if (goods.includes('sulfur') || goods.includes('obsidian')) { damage += 3; }
+  if (goods.includes('bone')) damage += 2;
+  if (goods.includes('wood') || goods.includes('fiber')) { damage += 1; range += 5; }
+  for (const id of g.townStock(t)) {
+    const m = MOD[id];
+    if (!m) continue;
+    if (m.weapon) { damage += 4; range += 12; rate += 0.08; }
+    else if (m.shield || (m.hp ?? 0) > 0) damage += 2;
+    else if (m.spikes) damage += 2;
+  }
+  const diff = g.difficulty(t.x, t.y);
+  damage = Math.round(damage * (0.65 + diff * 0.7));
+  const color = goods.includes('crystal') ? '#b07cff' : goods.includes('sulfur') || goods.includes('obsidian') ? '#f2e14c' : goods.includes('iron') || goods.includes('metal') ? '#cfd8dc' : '#ffd166';
+  return { name: watchName(goods), range: Math.min(320, Math.round(range)), damage: Math.min(80, damage), rate: Math.min(2.4, rate), color };
+}
+
+export function inTownSafeZone(g: Game, x: number, y: number, extra = 0): boolean {
+  return g.nearTowns.some((t) => Math.hypot(t.x - x, t.y - y) <= TOWN_SAFE_RADIUS + extra);
+}
+
+/** Towns shoot the nearest critter in range. Kills use the normal loot path. */
+export function updateTownDefense(g: Game, dt: number) {
+  for (const t of g.nearTowns) {
+    const cd = (g.townDefCd[t.key] ?? 0) - dt;
+    if (cd > 0) { g.townDefCd[t.key] = cd; continue; }
+    const def = townDefense(g, t);
+    let best: Mob | null = null, bd = def.range;
+    for (const m of g.mobs) {
+      const d = Math.hypot(m.x - t.x, m.y - t.y);
+      if (d < bd) { bd = d; best = m; }
+    }
+    if (!best) { g.townDefCd[t.key] = 0.2; continue; }
+    g.townDefCd[t.key] = 1 / def.rate;
+    const ox = t.x + (t.seedv > 0.5 ? 30 : -30), oy = t.y - 12;
+    const ang = Math.atan2(best.y - oy, best.x - ox);
+    const speed = 420;
+    g.projectiles.push({ kind: 'bullet', x: ox, y: oy, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, dmg: def.damage, life: def.range / speed + 0.15, target: null, color: def.color, town: true });
+    g.part(ox, oy, Math.cos(ang) * 20, Math.sin(ang) * 20, 0.12, 2.5, def.color, 1, 0, 0);
+    const near = Math.hypot(g.v.x - t.x, g.v.y - t.y) < 500;
+    if (near) sfx('shot', 0.35);
+    if (near && (g.townDefLog[t.key] ?? -999) + 45 < g.time) {
+      g.townDefLog[t.key] = g.time;
+      g.addLog(`🏹 ${t.name}'s ${def.name} opens fire on a ${best.def.name}.`, '#ffd166');
+    }
+  }
 }
 
 export function blueprintPrice(g: Game, t: { x: number; y: number; mod?: number }, id: string) {

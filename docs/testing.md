@@ -78,11 +78,12 @@ export default async function ({ page, assert, screenshot, log }) {
 }
 ```
 
-See `test/firsts.mjs` and `test/planner.mjs` for working versions:
+See `test/firsts.mjs`, `test/planner.mjs`, and `test/park.mjs` for working versions:
 
 ```bash
 node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/firsts.mjs
 node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/planner.mjs
+node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/park.mjs
 ```
 
 Useful harness commands:
@@ -110,5 +111,10 @@ stop autosave and unload handlers from writing the test run to the browser profi
 - **Plans:** plan a chassis expansion or known part from the Workshop, confirm the HUD goal bar
   appears away from town, set a collection limit, and confirm it survives a close/reopen. Build
   the planned item and confirm the plan clears.
+- **Mouse & parking:** left-clicking the world must not set a waypoint; right-clicking must.
+  Park, resume, and confirm a manual waypoint parks on arrival and auto-resumes after its timer.
+  Open a town panel while docked and confirm the house stays put while browsing.
+- **Town watch:** park near a town with critters around; the town should fire, no new critters
+  should spawn inside its ring, and a parked house inside the ring should not take contact hits.
 
 See [saves.md](saves.md) for the save-specific cases.

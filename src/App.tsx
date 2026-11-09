@@ -34,12 +34,25 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef(game);
   gameRef.current = game;
+  const modalRef = useRef<ModalKind | null>(null);
+  modalRef.current = modal;
   const playingRef = useRef(!title);
   playingRef.current = !title;
 
   useGameLoop(canvasRef, gameRef);
   const tick = useSessionKeeper(gameRef, playingRef, useCallback((r: Report) => setOffline(r), []));
-  const toggleModal = useCallback((m: ModalKind | null) => { setUiHidden(false); setModal((cur) => (m === null || cur === m ? null : m)); }, []);
+  const openModal = useCallback((m: ModalKind) => {
+    setUiHidden(false);
+    // Browsing a town's wares shouldn't mean drifting out of it while you read.
+    if (m === 'trade' && gameRef.current.docked) gameRef.current.parkAtDock();
+    setModal(m);
+  }, []);
+  const toggleModal = useCallback((m: ModalKind | null) => {
+    setUiHidden(false);
+    const cur = modalRef.current;
+    if (m === null || cur === m) { setModal(null); return; }
+    openModal(m);
+  }, [openModal]);
   const toggleUi = useCallback(() => { setUiHidden((h) => !h); setModal(null); }, []);
   useHotkeys(gameRef, playingRef, toggleModal, toggleUi);
 
@@ -47,6 +60,12 @@ export default function App() {
     if (!playingRef.current) return;
     const r = e.currentTarget.getBoundingClientRect();
     gameRef.current.click(e.clientX - r.left, e.clientY - r.top, r.width, r.height);
+  }, []);
+  const onCanvasContextMenu = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!playingRef.current) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    gameRef.current.rightClick(e.clientX - r.left, e.clientY - r.top, r.width, r.height);
   }, []);
   const onWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => { if (playingRef.current) gameRef.current.zoomBy(e.deltaY > 0 ? -1 : 1); }, []);
 
@@ -93,9 +112,9 @@ export default function App() {
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[#1b2433] font-sans">
-      <canvas ref={canvasRef} onClick={onCanvasClick} onWheel={onWheel} className="absolute inset-0 h-full w-full touch-manipulation" style={{ imageRendering: 'pixelated' }} />
+      <canvas ref={canvasRef} onClick={onCanvasClick} onContextMenu={onCanvasContextMenu} onWheel={onWheel} className="absolute inset-0 h-full w-full touch-manipulation" style={{ imageRendering: 'pixelated' }} />
 
-      {playing && !uiHidden && <HUD game={game} tick={tick} open={(m) => setModal(m)} onHide={toggleUi} />}
+      {playing && !uiHidden && <HUD game={game} tick={tick} open={openModal} onHide={toggleUi} />}
       {playing && !uiHidden && <VisitorCard game={game} tick={tick} />}
       {playing && <Toasts game={game} tick={tick} />}
       {playing && uiHidden && (

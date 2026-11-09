@@ -18,6 +18,8 @@ export interface Particle { x: number; y: number; vx: number; vy: number; life: 
 export interface Projectile {
   kind: 'bullet' | 'rocket' | 'bubble' | 'pebble' | 'stone' | 'harpoon' | 'frost'; x: number; y: number; vx: number; vy: number; dmg: number; life: number; target: Mob | null;
   sx?: number; sy?: number; tx?: number; ty?: number; t?: number; T?: number; splash?: number; color?: string;
+  /** Fired by a town watch; ignores the player's damage buffs. */
+  town?: boolean;
 }
 export interface Popup { x: number; y: number; text: string; color: string; life: number; max: number; big: boolean; key?: string; amt?: number; icon?: string }
 export interface Beam { x1: number; y1: number; x2: number; y2: number; life: number; color: string }

@@ -6,6 +6,8 @@ import { hash2 } from '../world/noise';
 import { ResNode, TILE } from '../world/world';
 import { curious } from './exploration';
 import { foragePriority } from './plan';
+import { PARK_SECONDS, WAYPOINT_PARK_SECONDS, park, updatePark } from './rest';
+import { inTownSafeZone } from './towns';
 import { chooseAngle, giveUp, lineClear, navSteer, pickTradeTown, resetNav } from './navigation';
 
 export function livePower(g: Game, moving: boolean, dt: number) {
@@ -34,6 +36,7 @@ export function livePower(g: Game, moving: boolean, dt: number) {
 
 export function updateVehicle(g: Game, dt: number) {
   const v = g.v;
+  updatePark(g);
   v.flash = Math.max(0, v.flash - dt);
   v.invulnT = Math.max(0, v.invulnT - dt);
   v.shieldT = Math.max(0, v.shieldT - dt);
@@ -51,7 +54,9 @@ export function updateVehicle(g: Game, dt: number) {
   let throttle = 0;
   const cargoFull = g.cargoFree() <= 0;
 
-  if (g.manual && !avatarOut) {
+  if (g.parked) {
+    throttle = 0;
+  } else if (g.manual && !avatarOut) {
     const k = g.keys;
     if (k.has('w') || k.has('arrowup')) throttle = 1;
     if (k.has('s') || k.has('arrowdown')) throttle = -0.5;
@@ -66,7 +71,12 @@ export function updateVehicle(g: Game, dt: number) {
     let target: { x: number; y: number; key: string } | null = null;
     if (g.waypoint) {
       target = { x: g.waypoint.x, y: g.waypoint.y, key: 'wp' };
-      if (Math.hypot(g.waypoint.x - v.x, g.waypoint.y - v.y) < 24) { g.waypoint = null; target = null; g.addLog('Waypoint reached.', '#7fd1e8'); }
+      if (Math.hypot(g.waypoint.x - v.x, g.waypoint.y - v.y) < 24) {
+        const atTown = inTownSafeZone(g, g.waypoint.x, g.waypoint.y);
+        g.waypoint = null; target = null;
+        park(g, atTown ? PARK_SECONDS : WAYPOINT_PARK_SECONDS, atTown ? 'waypoint-town' : 'waypoint');
+        throttle = 0;
+      }
     } else {
       if (g.settings.returnWhenFull && g.tradeCd <= 0 && !g.tradeRun && g.cargoUsed() >= g.cargoCap * 0.9) {
         if (!g.hasSellable()) { g.tradeCd = 60; g.addLog('Cargo is full, but everything is locked or not set to auto-sell.', '#ffb347'); }
@@ -106,22 +116,24 @@ export function updateVehicle(g: Game, dt: number) {
         if (g.forageTarget) target = { x: g.forageTarget.x, y: g.forageTarget.y, key: 'node:' + g.forageTarget.key };
       } else if (g.mode === 'heading') g.wanderA = g.headingAngle;
     }
-    if (!target && g.mode !== 'heading') g.wanderA += (hash2(Math.floor(g.time * 0.4), 7, g.world.seed) - 0.5) * dt * 0.9;
-    g.steerT -= dt;
-    if (g.steerT <= 0) {
-      g.steerT = 0.16;
-      if (target) {
-        g.steerAngle = navSteer(g, target.x, target.y, target.key, 0.16);
-        const lim = target.key.startsWith('node:') ? 6 : target.key.startsWith('lm:') ? 20 : 50;
-        if (g.nav.noProg > lim) giveUp(g, target.key);
-      } else { if (g.nav.key) resetNav(g, ''); g.steerAngle = chooseAngle(g, g.wanderA); }
+    if (!g.parked) {
+      if (!target && g.mode !== 'heading') g.wanderA += (hash2(Math.floor(g.time * 0.4), 7, g.world.seed) - 0.5) * dt * 0.9;
+      g.steerT -= dt;
+      if (g.steerT <= 0) {
+        g.steerT = 0.16;
+        if (target) {
+          g.steerAngle = navSteer(g, target.x, target.y, target.key, 0.16);
+          const lim = target.key.startsWith('node:') ? 6 : target.key.startsWith('lm:') ? 20 : 50;
+          if (g.nav.noProg > lim) giveUp(g, target.key);
+        } else { if (g.nav.key) resetNav(g, ''); g.steerAngle = chooseAngle(g, g.wanderA); }
+      }
+      const diff = angDiff(g.steerAngle, v.angle);
+      v.angle += Math.max(-1.5 * dt, Math.min(1.5 * dt, diff));
+      if (g.harvs.length && !cargoFull) {
+        for (const n of g.nearNodes) if (n.hp > 0 && foragePriority(g, n.res) !== null && Math.hypot(n.x - v.x, n.y - v.y) < 34) { throttle = 0.3; break; }
+      }
+      if (g.dockPause > 0) { g.dockPause -= dt; throttle = 0; }
     }
-    const diff = angDiff(g.steerAngle, v.angle);
-    v.angle += Math.max(-1.5 * dt, Math.min(1.5 * dt, diff));
-    if (g.harvs.length && !cargoFull) {
-      for (const n of g.nearNodes) if (n.hp > 0 && foragePriority(g, n.res) !== null && Math.hypot(n.x - v.x, n.y - v.y) < 34) { throttle = 0.3; break; }
-    }
-    if (g.dockPause > 0) { g.dockPause -= dt; throttle = 0; }
   }
 
   const moving = throttle !== 0;
@@ -158,7 +170,7 @@ export function updateVehicle(g: Game, dt: number) {
   g.stuckCheckT += dt;
   if (g.stuckCheckT > 3) {
     const moved = Math.hypot(v.x - g.lastPos.x, v.y - g.lastPos.y);
-    if (!avatarOut && !g.manual && g.dockPause <= 0 && moved < 6) {
+    if (!avatarOut && !g.manual && !g.parked && g.dockPause <= 0 && moved < 6) {
       g.stuckT += g.stuckCheckT;
       g.wanderA = v.angle + Math.PI * (0.6 + Math.random() * 0.8);
       g.forageTarget = null;

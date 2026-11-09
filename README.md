@@ -23,7 +23,7 @@ npm run build
 
 - **Do nothing** — the home drives, harvests, fights and trades on its own.
 - **WASD** — walk around inside; walk off the edge or press **E** to step outside.
-- **Click** — set a waypoint; **wheel** zooms; **T** toggles driving.
+- **Right-click** — set a waypoint; the house parks on arrival. **Wheel** zooms; **T** toggles driving; **P** parks/resumes.
 - **G** workshop · **B** town/journal · **I** supplies & plans · **J** memories · **L** family · **H** hide UI.
 
 ## What is in here

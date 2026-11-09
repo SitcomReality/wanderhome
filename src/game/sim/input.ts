@@ -23,6 +23,7 @@ export function keyUp(g: Game, k: string) { g.keys.delete(k.toLowerCase()); }
 
 export function toggleManual(g: Game) {
   if (!g.av.inside) { g.addLog('Get back in the house to drive!', '#7fd1e8'); return; }
+  g.parked = false; g.parkUntil = 0;
   g.manual = !g.manual;
   g.waypoint = null; g.tradeRun = null;
   g.addLog(g.manual ? '🕹️ You took the wheel. (WASD to drive, +25% speed, T to release)' : 'Autopilot engaged.', '#7fd1e8');
@@ -59,8 +60,9 @@ export function click(g: Game, sx: number, sy: number, W: number, H: number) {
   const wx = (sx - W / 2) / g.cam.zoom + g.cam.x, wy = (sy - H / 2) / g.cam.zoom + g.cam.y;
   const lp = g.toLocal(wx, wy);
   if (g.av.inside) {
-    if (Math.abs(lp.x) < g.hw + 2 && Math.abs(lp.y) < g.hh + 2) { g.exitVehicle(); return; }
-    g.setWaypoint(wx, wy);
+    // Left-click is also how the window is focused. Only the house itself is a left-click
+    // action; waypoints use the right mouse button so a focus click cannot redirect the house.
+    if (Math.abs(lp.x) < g.hw + 2 && Math.abs(lp.y) < g.hh + 2) g.exitVehicle();
   } else {
     g.av.tx = wx; g.av.ty = wy; g.av.hasTarget = true; g.av.returning = false;
     g.av.enterOnArrive = Math.abs(lp.x) < g.hw + 4 && Math.abs(lp.y) < g.hh + 4;
@@ -68,8 +70,17 @@ export function click(g: Game, sx: number, sy: number, W: number, H: number) {
   }
 }
 
+/** Right-click on the world sets a waypoint; the house parks when it arrives. */
+export function rightClick(g: Game, sx: number, sy: number, W: number, H: number) {
+  g.lastInput = g.time;
+  if (!g.av.inside) return;
+  const wx = (sx - W / 2) / g.cam.zoom + g.cam.x, wy = (sy - H / 2) / g.cam.zoom + g.cam.y;
+  g.setWaypoint(wx, wy);
+}
+
 export function setWaypoint(g: Game, wx: number, wy: number) {
   g.waypoint = { x: wx, y: wy }; g.manual = false; g.tradeRun = null;
+  g.parked = false; g.parkUntil = 0;
   resetNav(g, '');
   g.burst(wx, wy, 8, ['#7fd1e8', '#fff'], 40, 0.5, 1.4);
 }

@@ -43,8 +43,8 @@ main.tsx
 1. once-per-second upkeep: expire buffs, relax town saturation
 2. 10 s income-rate sampling
 3. refresh nearby-town and nearby-node caches
-4. `Driving` → `Avatar` → `Harvest` → `Weapons` → `Critters` → projectiles → pickups →
-   processing → `Exploration` → docking → effects → camera
+4. `Driving` → `Avatar` → `Harvest` → `Weapons` → `Critters` → town watch → projectiles →
+   pickups → processing → `Exploration` → docking → effects → camera
 5. `legacyTick` (only when `legacyOn`): biome discovery, lifetime records, crew, milestones,
    visitors
 
@@ -98,6 +98,7 @@ src/
       driving.ts                engine power, throttle, autopilot, stuck recovery
       navigation.ts             pathing, reachability, trade runs
       plan.ts                   build goals, collection limits, plan-aware sell floor
+      rest.ts                   timed parking, waypoint arrival stops, park countdowns
       avatar.ts                 walking inside/outside the house
       harvest.ts                hitting nodes, pickups, processing
       weapons.ts                firing, damage, explosions

@@ -3,6 +3,7 @@ import type { Game } from '../engine';
 import { TAU } from '../core/constants';
 import { BIOME, MOBS, RES_INFO, RES_LIST, Res } from '../../content/index';
 import { sfx } from '../sfx';
+import { inTownSafeZone } from './towns';
 import { killMob } from './weapons';
 
 export function spawnMobs(g: Game, dt: number) {
@@ -15,9 +16,13 @@ export function spawnMobs(g: Game, dt: number) {
   const max = Math.floor(Math.min(16, (dist < 60 ? 2 : 3) + Math.floor(dist / 150) + (night ? 2 : 0)) * (1 - Math.min(0.6, scare)));
   if (g.mobs.length >= max) return;
   const fx = g.av.inside ? g.v.x : g.av.x, fy = g.av.inside ? g.v.y : g.av.y;
+  // Loitering in a town's watch radius is a rest, not a spawn camp: no new critters appear.
+  if (inTownSafeZone(g, fx, fy)) return;
   for (let tries = 0; tries < 4; tries++) {
     const a = Math.random() * TAU, r = 300 + Math.random() * 120;
     const x = fx + Math.cos(a) * r, y = fy + Math.sin(a) * r;
+    // Never pop a critter inside a town's ring, even when the player is outside it.
+    if (inTownSafeZone(g, x, y)) continue;
     const t = g.world.terrainAt(x, y);
     const bd = BIOME[t];
     let opts = MOBS.filter((m) => (m.biomes.includes(t) || !!bd?.mobs?.includes(m.id)) && dist >= (m.minDist ?? 0) && (!m.night || night) && g.mobCanEnter(m, t));
@@ -36,6 +41,9 @@ export function updateMobs(g: Game, dt: number) {
   spawnMobs(g, dt);
   const v = g.v, a = g.av;
   const vr = Math.max(g.hw, g.hh) + 2;
+  // Stopped inside a town's watch radius, you get a breather; the watch does the fighting.
+  const vehicleSafe = (g.parked || !!g.docked) && inTownSafeZone(g, v.x, v.y);
+  const avatarSafe = !a.inside && inTownSafeZone(g, a.x, a.y);
   for (let i = g.mobs.length - 1; i >= 0; i--) {
     const m = g.mobs[i];
     if (!m) continue;
@@ -63,7 +71,7 @@ export function updateMobs(g: Game, dt: number) {
       const dx = m.x - o.x, dy = m.y - o.y, d = Math.hypot(dx, dy), md = m.def.r + o.def.r;
       if (d > 0 && d < md) { m.x += (dx / d) * (md - d) * 0.5; m.y += (dy / d) * (md - d) * 0.5; }
     }
-    if (!tgtAv && dv < vr + m.def.r && m.atkCd <= 0 && m.fleeT <= 0) {
+    if (!tgtAv && !vehicleSafe && dv < vr + m.def.r && m.atkCd <= 0 && m.fleeT <= 0) {
       m.atkCd = 1.2;
       const ang = Math.atan2(m.y - v.y, m.x - v.x);
       m.vx = Math.cos(ang) * 90; m.vy = Math.sin(ang) * 90;
@@ -83,7 +91,7 @@ export function updateMobs(g: Game, dt: number) {
         sfx('hurt');
         if (v.hp <= 0) breakdown(g);
       }
-    } else if (tgtAv && da < 5 + m.def.r && m.atkCd <= 0 && a.stunT <= 0) {
+    } else if (tgtAv && !avatarSafe && da < 5 + m.def.r && m.atkCd <= 0 && a.stunT <= 0) {
       m.atkCd = 1;
       a.hp -= m.dmg; a.flash = 0.15;
       const ang = Math.atan2(m.y - a.y, m.x - a.x);

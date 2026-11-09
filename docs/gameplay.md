@@ -24,9 +24,11 @@ and lifetime totals survive retirement.
 | Do nothing | autopilot drives, harvests, trades, and fights |
 | `WASD` / arrows | drive manually (inside) or walk (outside) |
 | `E` | step outside / climb back in |
-| Click | set a waypoint (inside) or a walk target (outside); clicking the house exits |
+| Left-click | focus the game; while inside, click the house to step outside; while outside, click the ground to walk there |
+| Right-click | set a waypoint on the world; the house parks when it arrives (left-clicking the minimap also sets one) |
 | Wheel | zoom |
 | `T` | take or release the wheel; manual driving is 25% faster |
+| `P` | park for a while / resume autopilot |
 | `Space` | honk inside / swing at critters and nodes outside |
 | `G` / `B` / `I` / `J` / `L` | Workshop / town journal / Supplies & plans / Memories / Family |
 | `H` | hide the UI |
@@ -35,6 +37,11 @@ and lifetime totals survive retirement.
 The house drives in `forage`, `wander`, or `heading` mode; a full cargo hold or a manual
 waypoint can override that with a trade run or a direct target. It recovers from getting
 stuck and from breakdowns on its own.
+
+Manual waypoints park the house when it arrives, instead of immediately wandering off again.
+`P` parks anywhere for a timed break, and **Park**/`P` again resumes. A park always expires on
+its own, so autopilot can never be left off by accident. Opening a town's panel while
+docked also parks it, giving you time to browse.
 
 **Supplies & plans (I)** can be opened anywhere, not just in town. Each resource has a
 **Lock** (a floor that is never auto-sold) and a **Collect up to** limit (an upper bound
@@ -53,6 +60,8 @@ also pull in the inputs for any installed processor that makes them.
 | Harvest | edge tools hit nodes; drops, magnets, and processing chains | `game/sim/harvest.ts` |
 | Combat | weapons, projectiles, critters, damage, temporary breakdowns | `game/sim/weapons.ts`, `critters.ts` |
 | Towns and trade | docking, prices, stock, blueprints, rumours, auto-sell | `game/sim/towns.ts` |
+| Town watch | static town defenses, safe zones, no spawns near settlements | `game/sim/towns.ts` |
+| Parking | timed stops, waypoint arrivals, town browsing | `game/sim/rest.ts` |
 | Supplies & plans | per-resource collection limits, build goals, plan-aware sell protection and foraging | `game/sim/plan.ts` |
 | Workshop | grid placement, synergies, locomotion/frames, expansion | `game/sim/workshop.ts`, `vehicleStats.ts` |
 | Exploration | landmarks, buffs, rumours, map reveals | `game/sim/exploration.ts` |
@@ -82,6 +91,11 @@ also pull in the inputs for any installed processor that makes them.
   come back to progress, not a penalty.
 - **No daily streaks or FOMO.** The morning coffee is a once-a-day gift (local date), not a
   chore, and missing it costs nothing permanent.
+- **Towns are a breather.** The watch shoots nearby critters using gear derived from local
+  goods and the town's stock. No critters spawn inside the watch radius, and a parked or
+  docked house inside it is not attacked. Town kills drop loot normally; no special cases.
+- **Stops are temporary.** Parking always has a countdown and auto-resumes, so the idle
+  game cannot be accidentally left switched off.
 - **Cozy, specific, gently funny.** Text is warm and observational, never cynical or
   punishing. Keep the house, the family, and the small domestic details in focus.
 - **The idle game and the immersive game are separate.** This is the one you leave running;

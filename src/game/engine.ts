@@ -24,6 +24,7 @@ import * as Effects from './sim/effects';
 import * as Input from './sim/input';
 import * as Workshop from './sim/workshop';
 import * as Plan from './sim/plan';
+import * as Rest from './sim/rest';
 import * as Persistence from './sim/persistence';
 import * as Minimap from './render/minimap';
 import * as VehicleRender from './render/vehicleRender';
@@ -95,6 +96,12 @@ export class Game {
   rates: Record<string, number> = {};
   townSat: Record<string, Partial<Record<Res, number>>> = {};
   docked: Town | null = null;
+  /** Temporary stop requested by the player. Always auto-resumes when `parkUntil` passes. */
+  parked = false;
+  parkUntil = 0;
+  /** Transient town-watch cooldowns & chatter throttles, keyed by town key. */
+  townDefCd: Record<string, number> = {};
+  townDefLog: Record<string, number> = {};
   log: LogMsg[] = [];
   lastInput = 0;
   keys = new Set<string>();
@@ -274,6 +281,7 @@ export class Game {
     Harvest.updateHarvest(this, dt);
     Weapons.updateWeapons(this, dt);
     Critters.updateMobs(this, dt);
+    Towns.updateTownDefense(this, dt);
     Weapons.updateProjectiles(this, dt);
     Harvest.updatePickups(this, dt);
     Harvest.updateProcess(this, dt);
@@ -310,7 +318,7 @@ export class Game {
   dropPickup(x: number, y: number, kind: Res | 'coins', amt: number, home: 'v' | 'a' | null) { return Harvest.dropPickup(this, x, y, kind, amt, home); }
 
   // ---- sim/weapons ----
-  damageMob(m: Mob, dmg: number, numbers = true) { return Weapons.damageMob(this, m, dmg, numbers); }
+  damageMob(m: Mob, dmg: number, numbers = true, buff = true) { return Weapons.damageMob(this, m, dmg, numbers, buff); }
   explode(x: number, y: number, r: number, dmg: number, scale = 1) { return Weapons.explode(this, x, y, r, dmg, scale); }
 
   // ---- sim/towns ----
@@ -329,6 +337,8 @@ export class Game {
   sellable(r: Res) { return Towns.sellable(this, r); }
   autoSellNow(t: Town) { return Towns.autoSellNow(this, t); }
   makeRumor(t: { x: number; y: number }) { return Towns.makeRumor(this, t); }
+  townDefense(t: Town) { return Towns.townDefense(this, t); }
+  inTownSafeZone(x = this.v.x, y = this.v.y) { return Towns.inTownSafeZone(this, x, y); }
 
   // ---- sim/exploration ----
   visitLandmark(lm: Landmark, who: 'v' | 'a') { return Exploration.visitLandmark(this, lm, who); }
@@ -345,8 +355,16 @@ export class Game {
   toggleManual() { return Input.toggleManual(this); }
   action() { return Input.action(this); }
   click(sx: number, sy: number, W: number, H: number) { return Input.click(this, sx, sy, W, H); }
+  rightClick(sx: number, sy: number, W: number, H: number) { return Input.rightClick(this, sx, sy, W, H); }
   setWaypoint(wx: number, wy: number) { return Input.setWaypoint(this, wx, wy); }
   zoomBy(d: number) { return Input.zoomBy(this, d); }
+
+  // ---- sim/rest ----
+  park(seconds?: number) { return Rest.park(this, seconds); }
+  parkAtDock() { return Rest.parkAtDock(this); }
+  togglePark() { return Rest.toggle(this); }
+  resumePark() { return Rest.resume(this, 'manual'); }
+  parkLeft() { return Rest.parkLeft(this); }
 
   // ---- sim/workshop ----
   placeModule(idx: number, id: string) { return Workshop.placeModule(this, idx, id); }

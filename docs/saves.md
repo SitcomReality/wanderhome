@@ -35,7 +35,8 @@ discard player data.
   biomes/time, crew, and any waiting visitor. `save()` is the authoritative list.
 - `collectCap` is a per-resource upper collection limit (`-1` = no limit). `goal` is a
   content-id reference (`kind` + `id`) to the active build plan; its cost is derived from
-  content, not stored.
+  content, not stored. Parking (`parked`/`parkUntil`) and town-watch cooldowns are temporary
+  and deliberately not saved; loading a save resumes normal autopilot.
 - Loaded by `bootGame()` → `migrateRunSave()` → `new Game(seed, save)` → `applySave()`.
 - `applySave()` filters unknown content ids, repairs the cockpit, fills missing resources,
   clamps invalid values, and recomputes derived stats. Keep that defensive behaviour: old or

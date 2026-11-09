@@ -2,6 +2,8 @@
 import { Town } from '../world/world';
 import { C, TAU, drawShadow } from './primitives';
 
+const WATCH_TOWERS = [[-34, 4], [34, -4]] as const;
+
 export function drawTown(ctx: C, town: Town, t: number, docked: boolean) {
   const x = town.x, y = town.y;
   const r = (k: number) => (town.seedv * 997 * (k + 1)) % 1;
@@ -25,6 +27,15 @@ export function drawTown(ctx: C, town: Town, t: number, docked: boolean) {
       ctx.beginPath(); ctx.arc(X + 4 + p * 4, Y - 14 - p * 8, 1.5 + p * 2, 0, TAU); ctx.fill();
     }
   });
+  // A pair of little watchtowers: the town's defenses have somewhere to stand.
+  for (const [ox, oy] of WATCH_TOWERS) {
+    const X = x + ox, Y = y + oy;
+    drawShadow(ctx, X, Y + 1, 4, 2);
+    ctx.fillStyle = '#4e342e'; ctx.fillRect(X - 1.7, Y - 13, 3.4, 13);
+    ctx.fillStyle = '#8d6e63'; ctx.fillRect(X - 4, Y - 15, 8, 2.5);
+    ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.moveTo(X - 5, Y - 15); ctx.lineTo(X, Y - 20); ctx.lineTo(X + 5, Y - 15); ctx.fill();
+    ctx.fillStyle = '#ffd166'; ctx.fillRect(X - 0.5, Y - 18, 1, 2);
+  }
   ctx.fillStyle = '#8d6e63'; ctx.fillRect(x - 6, y - 3, 12, 5);
   for (let i = 0; i < 4; i++) { ctx.fillStyle = i % 2 ? '#fff' : '#e74c3c'; ctx.fillRect(x - 7 + i * 3.5, y - 7, 3.5, 4); }
   ctx.fillStyle = '#ffd166'; ctx.fillRect(x - 4, y - 2, 2, 2); ctx.fillStyle = '#7fd1e8'; ctx.fillRect(x, y - 2, 2, 2); ctx.fillStyle = '#b388ff'; ctx.fillRect(x + 3, y - 2, 2, 2);
