@@ -24,7 +24,7 @@ npm run build
 - **Do nothing** — the home drives, harvests, fights and trades on its own.
 - **WASD** — walk around inside; walk off the edge or press **E** to step outside.
 - **Click** — set a waypoint; **wheel** zooms; **T** toggles driving.
-- **G** workshop · **B** town/journal · **I** stores · **J** memories · **L** family · **H** hide UI.
+- **G** workshop · **B** town/journal · **I** supplies & plans · **J** memories · **L** family · **H** hide UI.
 
 ## What is in here
 
@@ -32,7 +32,7 @@ npm run build
 - `src/game/family/` — the persistent layer: generations, Legacy Sparks, Scrapbook, postcards, milestones, visitors, coffee, family shelf.
 - `src/content/` — all game data (27 biomes, 15 critters, 16 landmarks, 41 nodes, 75 modules, 9 locomotion types, 6 frames). See `src/content/MODDING.md`.
 - `src/components/` — React UI: HUD, workshop, town, family, settings, title/offline screens.
-- `src/ARCHITECTURE.md` — code map and invariants.
+- `docs/architecture.md` — code map, runtime lifecycle and invariants.
 
 ## Compatibility note
 
@@ -57,7 +57,19 @@ node ../webgame-tools/bin/webgame-harness.mjs smoke
 node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/firsts.mjs
 ```
 
-The browser harness uses system Firefox over WebDriver BiDi and writes artifacts to `.artifacts/webgame/`.
+The browser harness uses system Firefox over WebDriver BiDi and writes artifacts to `.artifacts/webgame/`. Build first (`npm run build`); the harness serves `dist/`.
+
+## Documentation
+
+Detailed docs live in [`docs/`](docs/):
+
+- [`docs/architecture.md`](docs/architecture.md) — code map, lifecycle, invariants
+- [`docs/conventions.md`](docs/conventions.md) — style, patterns, adding features
+- [`docs/testing.md`](docs/testing.md) — build, harness, scenario tests
+- [`docs/saves.md`](docs/saves.md) — save keys, migrations, offline time
+- [`docs/gameplay.md`](docs/gameplay.md) — systems and design rules
+
+Coding agents should start at [`AGENTS.md`](AGENTS.md).
 
 ## Design rules
 
