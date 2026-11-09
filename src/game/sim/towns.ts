@@ -8,6 +8,7 @@ import { meta } from '../family/meta';
 import { hash2 } from '../world/noise';
 import { sfx } from '../sfx';
 import { TILE, Town } from '../world/world';
+import { goalProtect } from './plan';
 
 export function townDist(g: Game, t: { x: number; y: number }) { return Math.hypot(t.x - g.homeX, t.y - g.homeY) / TILE; }
 
@@ -120,7 +121,7 @@ export function bestKnown(g: Game, r: Res, excludeKey?: string) {
   return best;
 }
 
-export function sellable(g: Game, r: Res) { return Math.max(0, Math.floor(g.res[r] - g.keep[r])); }
+export function sellable(g: Game, r: Res) { return Math.max(0, Math.floor(g.res[r] - Math.max(g.keep[r], goalProtect(g, r)))); }
 
 export function autoSellNow(g: Game, t: Town) {
   let total = 0;

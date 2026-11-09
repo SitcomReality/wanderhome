@@ -67,7 +67,7 @@ export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => 
 
       {town && tab === 'market' && (
         <>
-          <p className="mb-2 text-[11px] text-stone-500">Selling lots floods the local market, and prices recover over time. Buy where something's cheap and sell it where it's scarce. Locked amounts are never auto-sold.</p>
+          <p className="mb-2 text-[11px] text-stone-500">Selling lots floods the local market, and prices recover over time. Buy where something's cheap and sell it where it's scarce. Locked amounts are never auto-sold. Press <b className="text-stone-300">I</b> anywhere to edit locks, collection limits, and build plans in Supplies.</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-[10px] uppercase tracking-wider text-stone-500">

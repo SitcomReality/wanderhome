@@ -68,7 +68,7 @@ export function Workshop({ game, onClose, tick }: { game: Game; onClose: () => v
 
           {/* side panel */}
           <div className="min-h-0 overflow-y-auto border-l border-white/10 bg-[#1c1922] p-3">
-            {tab === 'parts' && <PartsTab game={game} pick={pick} setPick={setPick} setSel={setSel} />}
+            {tab === 'parts' && <PartsTab game={game} pick={pick} setPick={setPick} setSel={setSel} refresh={refresh} />}
 
             {tab === 'chassis' && <ChassisTab game={game} refresh={refresh} />}
 

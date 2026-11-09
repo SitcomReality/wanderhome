@@ -10,6 +10,7 @@ export function PinCard({ game, id, onChange, small = false }: { game: Game; id:
   const known = game.known.includes(id);
   const where = game.whereSold(id);
   const owned = (p.kind === 'loco' && game.ownedLocos.includes(id)) || (p.kind === 'frame' && game.ownedFrames.includes(id));
+  const planned = game.goal?.kind === p.kind && game.goal.id === id;
   return (
     <div className={`flex items-start gap-2 rounded-xl border border-sky-300/15 bg-sky-400/5 ${small ? 'p-1.5' : 'p-2'}`}>
       <PartIcon id={id} size={small ? 28 : 36} />
@@ -22,7 +23,7 @@ export function PinCard({ game, id, onChange, small = false }: { game: Game; id:
           <>
             <div className="text-emerald-300">Blueprint known · build cost:</div>
             <CostView cost={p.cost} game={game} />
-            <div className="mt-1 flex gap-1"><Btn onClick={() => { game.lockFor(p.cost); onChange?.(); }} title="Stop auto-selling these resources until you have enough">🔒 Save up</Btn></div>
+            <div className="mt-1 flex gap-1"><Btn active={planned} onClick={() => { game.planGoal(p.kind, id); onChange?.(); }} title="Gather the missing resources and keep them safe from auto-sell">🎯 {planned ? 'Planned' : 'Plan'}</Btn></div>
           </>
         ) : (
           <>

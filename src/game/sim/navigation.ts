@@ -4,7 +4,7 @@ import { TAU } from '../core/constants';
 import { LOCO, RES_LIST } from '../../content/index';
 import { Town } from '../world/world';
 
-export function hasSellable(g: Game) { return RES_LIST.some((r) => g.autoSellRes[r] && g.res[r] - g.keep[r] >= 1); }
+export function hasSellable(g: Game) { return RES_LIST.some((r) => g.autoSellRes[r] && g.sellable(r) >= 1); }
 
 export function townReachable(g: Game, t: { x: number; y: number }) {
   if (g.terrMult(t.x, t.y) > 0) return true;

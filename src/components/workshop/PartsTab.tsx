@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { CAT_INFO, MOD, ModCat, PART } from '../../content/index';
 import type { Game } from '../../game/engine';
 import { PartTraits } from '../common/PartInfo';
-import { CostView, PartIcon } from '../common/ui';
+import { Btn, CostView, PartIcon } from '../common/ui';
 import { activeCell } from './util';
 
-export function PartsTab({ game, pick, setPick, setSel }: { game: Game; pick: string | null; setPick: (id: string | null) => void; setSel: (n: number | null) => void }) {
+export function PartsTab({ game, pick, setPick, setSel, refresh }: { game: Game; pick: string | null; setPick: (id: string | null) => void; setSel: (n: number | null) => void; refresh: () => void }) {
   const [cat, setCat] = useState<ModCat | 'all'>('all');
   const active = (idx: number) => activeCell(game, idx);
   const knownMods = game.known.filter((id) => PART[id]?.kind === 'module');
@@ -26,10 +26,13 @@ export function PartsTab({ game, pick, setPick, setSel }: { game: Game; pick: st
             const m = MOD[id];
             const ok = game.canAfford(m.cost);
             const on = pick === id;
+            const planned = game.goal?.kind === 'module' && game.goal.id === id;
             const count = game.grid.filter((g, i) => g === id && active(i)).length;
+            const choose = () => { setPick(on ? null : id); setSel(null); };
             return (
-              <button key={id} onClick={() => { setPick(on ? null : id); setSel(null); }}
-                className={`flex w-full items-start gap-2.5 rounded-xl border p-2 text-left transition ${on ? 'border-emerald-300/70 bg-emerald-400/10' : 'border-white/8 bg-white/[0.03] hover:bg-white/[0.07]'}`}>
+              <div key={id} role="button" tabIndex={0} onClick={choose}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); } }}
+                className={`flex w-full cursor-pointer items-start gap-2.5 rounded-xl border p-2 text-left transition ${on ? 'border-emerald-300/70 bg-emerald-400/10' : 'border-white/8 bg-white/[0.03] hover:bg-white/[0.07]'}`}>
                 <div className="shrink-0 rounded-lg bg-black/30 p-0.5" style={{ boxShadow: `inset 0 0 0 1px ${CAT_INFO[m.cat].color}55` }}><PartIcon id={id} size={42} animate={on} /></div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
@@ -38,9 +41,14 @@ export function PartsTab({ game, pick, setPick, setSel }: { game: Game; pick: st
                   </div>
                   <div className="mb-1 text-[11px] leading-snug text-stone-400">{m.desc}</div>
                   <PartTraits id={id} compact />
-                  <div className={`mt-1 ${ok ? '' : 'opacity-80'}`}><CostView cost={m.cost} game={game} /></div>
+                  <div className={`mt-1 flex flex-wrap items-center gap-1.5 ${ok ? '' : 'opacity-80'}`}>
+                    <CostView cost={m.cost} game={game} />
+                    <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      <Btn onClick={() => { game.planGoal('module', id); refresh(); }} active={planned} title="Gather the missing resources for this part">🎯 {planned ? 'Planned' : 'Plan'}</Btn>
+                    </span>
+                  </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

@@ -5,6 +5,7 @@ import type { Game } from '../engine';
 import { RES_LIST, Res } from '../../content/index';
 import { DAY } from '../core/constants';
 import { noteAway, offlineCapSec, offlineMult } from '../family/bonuses';
+import { collectionRoom } from './plan';
 
 export interface OfflineReport { id: number; seconds: number; gains: Partial<Record<Res | 'coins', number>>; events: string[] }
 
@@ -31,7 +32,11 @@ export function applyOfflineProgress(g: Game, fromMs: number, opts: { advanceWor
     const rate = g.rates[k];
     if (!Number.isFinite(rate) || rate <= 0) continue;
     let n = Math.floor(rate * secs * mult);
-    if (k !== 'coins') n = Math.min(n, Math.floor(g.cargoFree()));
+    if (k !== 'coins') {
+      n = Math.min(n, Math.floor(g.cargoFree()));
+      const room = collectionRoom(g, k);
+      n = Math.min(n, Number.isFinite(room) ? Math.floor(room) : n);
+    }
     if (n > 0) { gains[k] = n; if (k === 'coins') g.coins += n; else g.res[k] += n; }
   }
   // Offline gains must not count as "income" for the rate estimator (that would compound next time).

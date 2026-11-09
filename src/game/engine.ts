@@ -4,8 +4,8 @@
  * delegators so the UI can keep calling game.sell(), game.render(), etc.
  */
 import type { OfflineReport } from './sim/offline';
-import { CELL, DAY, SAVE_KEY, TAU, nominalSpeed, zeroRes } from './core/constants';
-import { ActiveBuff, Beam, Bolt, Cloud, DriveMode, HarvState, KnownTown, LogMsg, Mob, Particle, Pickup, Popup, ProcState, Projectile, Rumor, Settings, VisitedMark, WeaponState } from './core/types';
+import { CELL, DAY, SAVE_KEY, TAU, nominalSpeed, noCaps, zeroRes } from './core/constants';
+import { ActiveBuff, Beam, Bolt, BuildGoal, Cloud, DriveMode, HarvState, KnownTown, LogMsg, Mob, Particle, Pickup, Popup, ProcState, Projectile, Rumor, Settings, VisitedMark, WeaponState } from './core/types';
 import { BIOME, BuffDef, BuffStat, Cost, GRID_MAX_H, GRID_MAX_W, MobDef, RES_INFO, RES_LIST, Res, STARTER_PARTS, Terrain, locoSpeed } from '../content/index';
 import { ActiveVisitor, Crew, Toast, applyNewRunPerks, extraCargo, extraComfort, legacyTick, meta, onDiscover, permMul, syncBook } from './family/index';
 import { hashString } from './world/noise';
@@ -23,6 +23,7 @@ import * as Exploration from './sim/exploration';
 import * as Effects from './sim/effects';
 import * as Input from './sim/input';
 import * as Workshop from './sim/workshop';
+import * as Plan from './sim/plan';
 import * as Persistence from './sim/persistence';
 import * as Minimap from './render/minimap';
 import * as VehicleRender from './render/vehicleRender';
@@ -40,6 +41,10 @@ export class Game {
   coins = 150;
   res: Record<Res, number> = { ...zeroRes(), wood: 15, stone: 20, fiber: 10, scrap: 15 };
   keep: Record<Res, number> = { ...zeroRes(), wood: 20, stone: 15, fiber: 10, fuel: 15, iron: 10, ice: 10, sulfur: 5, rope: 5 };
+  /** Voluntary collection limit per resource. -1 = no limit. */
+  collectCap: Record<Res, number> = noCaps();
+  /** The build the autopilot is gathering for, if any. */
+  goal: BuildGoal | null = null;
   autoSellRes: Record<Res, boolean> = Object.fromEntries(RES_LIST.map((r) => [r, RES_INFO[r].tier === 'common' || RES_INFO[r].tier === 'uncommon'])) as Record<Res, boolean>;
   seenRes: Res[] = ['wood', 'stone', 'fiber', 'scrap'];
   gridW = 3; gridH = 2;
@@ -350,6 +355,16 @@ export class Game {
   buildLoco(id: string) { return Workshop.buildLoco(this, id); }
   buildFrame(id: string) { return Workshop.buildFrame(this, id); }
   expand(dir: 'w' | 'h') { return Workshop.expand(this, dir); }
+
+  // ---- sim/plan ----
+  planGoal(kind: BuildGoal['kind'], id: string) { return Plan.setGoal(this, kind, id); }
+  clearGoal() { return Plan.clearGoal(this); }
+  goalLabel() { return Plan.goalLabel(this); }
+  goalCost() { return Plan.goalCost(this); }
+  goalEntries() { return Plan.goalEntries(this); }
+  goalReady() { return Plan.goalReady(this); }
+  planNeeds() { return Plan.planNeeds(this); }
+  wantsResource(r: Res) { return Plan.wantsResource(this, r); }
 
   // ---- sim/persistence ----
   save() { return Persistence.save(this); }

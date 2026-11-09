@@ -5,6 +5,7 @@ import { RES_INFO, RES_LIST, TIER_COLOR } from '../../content/index';
 import { fmtNum } from '../../game/engine';
 import { coffeeReady, drinkCoffee, retireProgress } from '../../game/family/index';
 import { meta } from '../../game/family/meta';
+import { goalCoins, goalEntries, goalLabel, goalReady } from '../../game/sim/plan';
 import { Bar } from '../common/ui';
 import { PinCard } from '../workshop/PinCard';
 import { Minimap } from './Minimap';
@@ -33,7 +34,7 @@ export function HUD({ game, tick, open, onHide }: { game: Game; tick: number; op
             <div className="text-[10px] text-stone-500">Generation {meta.generation} · the {meta.family}s{meta.cat ? ` · 🐈 ${meta.cat.name}` : ''}</div>
           </div>
         </div>
-        <button onClick={() => open('stores')} title="Stores & locks (I)" className="pointer-events-auto max-w-md rounded-xl border border-white/10 bg-black/50 px-2 py-1.5 text-left backdrop-blur transition hover:border-amber-200/30">
+        <button onClick={() => open('stores')} title="Supplies: locks, collection limits & build plans (I)" className="pointer-events-auto max-w-md rounded-xl border border-white/10 bg-black/50 px-2 py-1.5 text-left backdrop-blur transition hover:border-amber-200/30">
           <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[13px]">
             {resShown.length === 0 && <span className="text-xs text-stone-500">Empty cargo</span>}
             {resShown.map((r) => (
@@ -46,9 +47,23 @@ export function HUD({ game, tick, open, onHide }: { game: Game; tick: number; op
           <div className="mt-1 flex items-center gap-2 text-[10px] text-stone-400">
             <span>📦</span><Bar value={used} max={game.cargoCap} color={used >= game.cargoCap ? '#ff5c5c' : used > game.cargoCap * 0.8 ? '#ffb347' : '#7fd1e8'} />
             <span className="whitespace-nowrap tabular-nums">{Math.floor(used)}/{game.cargoCap}</span>
-            <span className="whitespace-nowrap text-stone-500">· click to lock</span>
+            <span className="whitespace-nowrap text-stone-500">· 🎯 plan & locks</span>
           </div>
         </button>
+        {game.goal && (
+          <button onClick={() => open('stores')} title="Open Supplies & Plans (I)" className={`pointer-events-auto w-fit max-w-md rounded-xl border px-2 py-1.5 text-left backdrop-blur transition hover:border-amber-300/50 ${goalReady(game) ? 'border-emerald-300/40 bg-emerald-400/10' : 'border-amber-300/25 bg-amber-400/[0.07]'}`}>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+              <span className="font-black text-amber-200">🎯 {goalLabel(game)}</span>
+              <span className={goalReady(game) ? 'font-bold text-emerald-300' : 'text-stone-400'}>{goalReady(game) ? 'Ready to build!' : 'Gathering…'}</span>
+            </div>
+            <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] tabular-nums">
+              {goalEntries(game).map(({ r, need, have }) => (
+                <span key={r} className={have >= need ? 'text-emerald-300' : 'text-stone-300'}>{RES_INFO[r].icon} {fmtNum(Math.min(have, need))}/{fmtNum(need)}</span>
+              ))}
+              {goalCoins(game) > 0 && <span className={game.coins >= goalCoins(game) ? 'text-emerald-300' : 'text-stone-300'}>🪙 {fmtNum(Math.floor(game.coins))}/{fmtNum(goalCoins(game))}</span>}
+            </div>
+          </button>
+        )}
         {game.pins.length > 0 && (
           <div className="pointer-events-auto flex max-w-xs flex-col gap-1">
             {game.pins.slice(0, 2).map((id) => <PinCard key={id} game={game} id={id} small onChange={() => force((n) => n + 1)} />)}
@@ -71,6 +86,7 @@ export function HUD({ game, tick, open, onHide }: { game: Game; tick: number; op
         </div>
         <div className="pointer-events-auto flex gap-1.5">
           {coffeeReady() && <button onClick={() => { drinkCoffee(game); force((n) => n + 1); }} className="rounded-xl border border-amber-200/30 bg-amber-900/50 px-2.5 py-1.5 text-sm shadow-lg transition hover:scale-105" title="Morning coffee: a small cozy buff, once a day. No streaks.">☕</button>}
+          <button onClick={() => open('stores')} className={`rounded-xl border px-2.5 py-1.5 text-sm shadow-lg transition hover:scale-105 ${game.goal ? 'border-amber-300/50 bg-amber-400/20' : 'border-white/15 bg-black/60'}`} title="Supplies, collection limits & build plans (I)">🎯</button>
           <button onClick={() => open('memories')} className="rounded-xl border border-white/15 bg-black/60 px-2.5 py-1.5 text-sm shadow-lg transition hover:scale-105" title="Scrapbook, postcards & milestones (J)">📖</button>
           <button onClick={() => open('legacy')} className={`rounded-xl border px-2.5 py-1.5 text-sm shadow-lg transition hover:scale-105 ${retireProgress(game).ready ? 'border-amber-300/60 bg-amber-500/30' : 'border-white/15 bg-black/60'}`} title="Family & legacy (L)">🌳</button>
           <button onClick={() => open('settings')} className="rounded-xl border border-white/15 bg-black/60 px-3 py-1.5 text-sm shadow-lg transition hover:scale-105" title="Settings">⚙️</button>
@@ -89,7 +105,7 @@ export function HUD({ game, tick, open, onHide }: { game: Game; tick: number; op
             Do nothing: your home drives, harvests, fights & trades by itself.<br />
             <b>WASD</b> walk inside · walk off the edge (or <b>E</b>) to go outside<br />
             <b>Click</b> map: waypoint · <b>Wheel</b>: zoom · <b>T</b>: drive<br />
-            <b>G</b> workshop · <b>B</b> town · <b>I</b> stores · <b>J</b> memories · <b>L</b> family · <b>H</b> hide UI
+            <b>G</b> workshop · <b>B</b> town · <b>I</b> supplies & plans · <b>J</b> memories · <b>L</b> family · <b>H</b> hide UI
           </div>
         ) : <button onClick={() => setHelp(true)} className="rounded-full bg-black/60 px-3 py-1.5 text-xs">❔</button>}
       </div>

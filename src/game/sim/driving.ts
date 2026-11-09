@@ -5,6 +5,7 @@ import { RES_INFO, TERRAIN_INFO } from '../../content/index';
 import { hash2 } from '../world/noise';
 import { ResNode, TILE } from '../world/world';
 import { curious } from './exploration';
+import { foragePriority } from './plan';
 import { chooseAngle, giveUp, lineClear, navSteer, pickTradeTown, resetNav } from './navigation';
 
 export function livePower(g: Game, moving: boolean, dt: number) {
@@ -93,7 +94,9 @@ export function updateVehicle(g: Game, dt: number) {
             const d = Math.hypot(n.x - v.x, n.y - v.y);
             if (d > 200 || g.terrMult(n.x, n.y) <= 0) continue;
             const ang = Math.abs(angDiff(Math.atan2(n.y - v.y, n.x - v.x), v.angle));
-            let sc = d + ang * 45;
+            const bias = foragePriority(g, n.res);
+            if (bias === null) continue;
+            let sc = d + ang * 45 + bias;
             for (const h of g.harvs) if (h.def.harvest!.bonus?.includes(n.res)) sc -= 50;
             if (RES_INFO[n.res].tier === 'rare' || RES_INFO[n.res].tier === 'epic') sc -= 60;
             if (sc < bs && lineClear(g, v.x, v.y, n.x, n.y)) { bs = sc; best = n; }
@@ -116,7 +119,7 @@ export function updateVehicle(g: Game, dt: number) {
     const diff = angDiff(g.steerAngle, v.angle);
     v.angle += Math.max(-1.5 * dt, Math.min(1.5 * dt, diff));
     if (g.harvs.length && !cargoFull) {
-      for (const n of g.nearNodes) if (n.hp > 0 && Math.hypot(n.x - v.x, n.y - v.y) < 34) { throttle = 0.3; break; }
+      for (const n of g.nearNodes) if (n.hp > 0 && foragePriority(g, n.res) !== null && Math.hypot(n.x - v.x, n.y - v.y) < 34) { throttle = 0.3; break; }
     }
     if (g.dockPause > 0) { g.dockPause -= dt; throttle = 0; }
   }

@@ -29,3 +29,7 @@ export interface HarvState { idx: number; def: ModuleDef; cd: number; range: num
 export interface ProcState { idx: number; def: ModuleDef; t: number; rate: number }
 export interface KnownTown { name: string; x: number; y: number; biome: Terrain; sell: Record<Res, number>; t: number; stock: string[] }
 export interface Rumor { id: number; text: string; partId: string; where: string; t: number }
+
+/** What the house is currently gathering for. Costs are derived from content, never saved. */
+export type BuildGoalKind = 'module' | 'frame' | 'loco' | 'expand';
+export interface BuildGoal { kind: BuildGoalKind; id: string }

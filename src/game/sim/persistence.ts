@@ -1,14 +1,15 @@
 // Saving and loading the current run (the family meta is saved separately).
 import type { Game } from '../engine';
-import { SAVE_KEY, zeroRes } from '../core/constants';
+import { SAVE_KEY, noCaps, zeroRes } from '../core/constants';
 import { BIOME, FRAME, GRID_MAX_H, GRID_MAX_W, LOCO, MOD, PART, RES_LIST, Res, STARTER_PARTS, TERRAIN_INFO } from '../../content/index';
 import { meta, saveMeta } from '../family/meta';
 import { applyOfflineProgress } from './offline';
+import { validGoal } from './plan';
 
 export function save(g: Game) {
   if ((globalThis as any).__wanderhausNoSave) return;
   const data = {
-    v: 3, gen: meta.generation, seedStr: g.seedStr, coins: g.coins, res: g.res, keep: g.keep, seenRes: g.seenRes, gridW: g.gridW, gridH: g.gridH, grid: g.grid,
+    v: 4, gen: meta.generation, seedStr: g.seedStr, coins: g.coins, res: g.res, keep: g.keep, collectCap: g.collectCap, goal: g.goal, seenRes: g.seenRes, gridW: g.gridW, gridH: g.gridH, grid: g.grid,
     loco: g.loco, ownedLocos: g.ownedLocos, frame: g.frame, ownedFrames: g.ownedFrames, known: g.known, pins: g.pins, rumors: g.rumors,
     vx: g.v.x, vy: g.v.y, angle: g.v.angle, hp: g.v.hp,
     settings: g.settings, stats: g.stats, towns: g.towns, townSat: g.townSat, autoSellRes: g.autoSellRes,
@@ -28,12 +29,18 @@ export function applySave(g: Game, s: any) {
   g.res = { ...zeroRes() };
   for (const r of RES_LIST) if (typeof oldRes[r] === 'number') g.res[r] = oldRes[r];
   if (s.keep) for (const r of RES_LIST) if (typeof s.keep[r] === 'number') g.keep[r] = s.keep[r];
+  g.collectCap = noCaps();
+  if (s.collectCap) for (const r of RES_LIST) {
+    const v = s.collectCap[r];
+    if (typeof v === 'number' && Number.isFinite(v)) g.collectCap[r] = v < 0 ? -1 : Math.max(0, Math.floor(v));
+  }
   g.seenRes = Array.isArray(s.seenRes) ? s.seenRes.filter((r: string) => RES_LIST.includes(r as Res)) : RES_LIST.filter((r) => g.res[r] > 0);
   for (const r of ['wood', 'stone', 'fiber'] as Res[]) if (!g.seenRes.includes(r)) g.seenRes.push(r);
   g.gridW = s.gridW; g.gridH = s.gridH;
   g.grid = (s.grid as (string | null)[]).map((id) => (id === 'lamp' ? 'lava' : id && MOD[id] ? id : null));
   while (g.grid.length < GRID_MAX_W * GRID_MAX_H) g.grid.push(null);
   if (!g.grid.includes('cockpit')) g.grid[g.cellIndex(g.gridW - 1, 0)] = 'cockpit';
+  g.goal = validGoal(g, s.goal) ? s.goal : null;
   g.ownedLocos = (s.ownedLocos ?? ['wheels']).filter((l: string) => LOCO[l]);
   g.loco = LOCO[s.loco] ? s.loco : 'wheels';
   g.ownedFrames = (s.ownedFrames ?? ['f_timber']).filter((f: string) => FRAME[f]);

@@ -2,6 +2,7 @@
 import type { Game } from '../engine';
 import { FRAME, GRID_MAX_H, GRID_MAX_W, LOCO, MOD, expandCost } from '../../content/index';
 import { sfx } from '../sfx';
+import { completeGoal } from './plan';
 
 export function placeModule(g: Game, idx: number, id: string) {
   const d = MOD[id];
@@ -10,6 +11,7 @@ export function placeModule(g: Game, idx: number, id: string) {
   g.grid[idx] = id;
   g.computeStats();
   sfx('buy');
+  completeGoal(g, 'module', id);
   return true;
 }
 
@@ -30,19 +32,21 @@ export function moveModule(g: Game, from: number, to: number) {
 
 export function buildLoco(g: Game, id: string) {
   const L = LOCO[id];
-  if (g.ownedLocos.includes(id)) { g.loco = id; g.computeStats(); return true; }
+  if (g.ownedLocos.includes(id)) { g.loco = id; g.computeStats(); completeGoal(g, 'loco', id); return true; }
   if (!g.known.includes(id) || !g.canAfford(L.cost)) return false;
   g.pay(L.cost); g.ownedLocos.push(id); g.loco = id; g.computeStats();
   sfx('buy'); g.addLog(`New locomotion: ${L.name}!`, '#2ecc71');
+  completeGoal(g, 'loco', id);
   return true;
 }
 
 export function buildFrame(g: Game, id: string) {
   const F = FRAME[id];
-  if (g.ownedFrames.includes(id)) { g.frame = id; g.computeStats(); return true; }
+  if (g.ownedFrames.includes(id)) { g.frame = id; g.computeStats(); completeGoal(g, 'frame', id); return true; }
   if (!g.known.includes(id) || !g.canAfford(F.cost)) return false;
   g.pay(F.cost); g.ownedFrames.push(id); g.frame = id; g.computeStats();
   sfx('buy'); g.addLog(`Rebuilt the chassis as a ${F.name}!`, '#2ecc71');
+  completeGoal(g, 'frame', id);
   return true;
 }
 
@@ -60,5 +64,6 @@ export function expand(g: Game, dir: 'w' | 'h') {
   g.computeStats();
   sfx('buy');
   g.addLog(`Chassis expanded to ${g.gridW}×${g.gridH}!`, '#2ecc71');
+  completeGoal(g, 'expand');
   return true;
 }

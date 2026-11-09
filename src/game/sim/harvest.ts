@@ -5,6 +5,7 @@ import { Pickup } from '../core/types';
 import { NODE, RES_INFO, Res } from '../../content/index';
 import { sfx } from '../sfx';
 import { ResNode } from '../world/world';
+import { collectionRoom, foragePriority } from './plan';
 
 export function hitNode(g: Game, n: ResNode, power: number, yieldMul: number, collector: 'v' | 'a', fromX: number, fromY: number, finds?: { res: Res; chance: number }[]) {
   if (n.hp <= 0) return;
@@ -57,12 +58,16 @@ export function updateHarvest(g: Game, dt: number) {
     if (h.cd > 0) continue;
     const p = g.cellLocal(h.idx);
     const w = g.toWorld(p.x, p.y);
-    let best: ResNode | null = null, bd = h.range;
+    let best: ResNode | null = null, bs = Infinity;
     for (const n of g.nearNodes) {
       if (n.hp <= 0) continue;
       const d = Math.hypot(n.x - w.x, n.y - w.y);
+      if (d > h.range) continue;
+      const bias = foragePriority(g, n.res);
+      if (bias === null) continue;
       const pref = hv.bonus?.includes(n.res) ? -14 : 0;
-      if (d + pref < bd) { bd = d + pref; best = n; }
+      const score = d + pref + bias;
+      if (score < bs) { bs = score; best = n; }
     }
     if (best) {
       h.cd = 1;
@@ -116,7 +121,9 @@ export function collect(g: Game, p: Pickup, x: number, y: number) {
     g.burst(x, y, 4, ['#ffd166', '#fff3b0'], 40, 0.35, 1.2, 4);
     sfx('coin', 1 + Math.random() * 0.2);
   } else {
-    const add = Math.min(p.amt, g.cargoFree());
+    const room = collectionRoom(g, p.kind);
+    if (room <= 0) { g.popup(x, y - 10, 'LIMIT', '#ffb347'); return; }
+    const add = Math.min(p.amt, room, g.cargoFree());
     if (add <= 0) { g.popup(x, y - 10, 'FULL', '#ff8a80'); return; }
     g.addRes(p.kind, add);
     const tier = RES_INFO[p.kind].tier;
