@@ -10,6 +10,7 @@ export { BIOMES, BIOME_TAGS } from './biomes';
 export { NODES } from './nodes';
 export { MOBS } from './mobs';
 export { LANDMARKS } from './landmarks';
+export { RESIDENTS } from './residents';
 export { LOCOS } from './locomotion';
 export { FRAMES } from './frames';
 export { MODULES, CAT_INFO } from './parts';

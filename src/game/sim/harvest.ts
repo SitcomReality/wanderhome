@@ -39,14 +39,14 @@ export function hitNode(g: Game, n: ResNode, power: number, yieldMul: number, co
   }
 }
 
-export function dropPickup(g: Game, x: number, y: number, kind: Res | 'coins', amt: number, home: 'v' | 'a' | null) {
+export function dropPickup(g: Game, x: number, y: number, kind: Res | 'coins', amt: number, home: 'v' | 'a' | null, town = false) {
   const pieces = Math.min(amt, kind === 'coins' ? 4 : 3);
   let left = amt;
   for (let i = 0; i < pieces; i++) {
     const a = i === pieces - 1 ? left : Math.floor(amt / pieces);
     left -= a;
     const ang = Math.random() * TAU, sp = 30 + Math.random() * 50;
-    g.pickups.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 30, kind, amt: a, age: 0, home });
+    g.pickups.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 30, kind, amt: a, age: 0, home, town: town || undefined });
   }
 }
 

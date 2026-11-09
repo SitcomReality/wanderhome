@@ -44,7 +44,7 @@ main.tsx
 2. 10 s income-rate sampling
 3. refresh nearby-town and nearby-node caches
 4. `Driving` → `Avatar` → `Harvest` → `Weapons` → `Critters` → town watch → projectiles →
-   pickups → processing → `Exploration` → docking → effects → camera
+   residents → pickups → processing → `Exploration` → docking → effects → camera
 5. `legacyTick` (only when `legacyOn`): biome discovery, lifetime records, crew, milestones,
    visitors
 
@@ -77,6 +77,7 @@ src/
     nodes.ts                  harvestable world objects
     mobs.ts                   critters
     landmarks.ts              points of interest and rewards
+    residents.ts              Homeport's first-slice people (name, role, quirk)
     locomotion.ts             wheels/legs/fins per-ground speed
     frames.ts                 chassis floors
     parts/                    vehicle modules, one file per category
@@ -104,6 +105,7 @@ src/
       weapons.ts                firing, damage, explosions
       critters.ts               mob spawning and AI
       towns.ts                  docking, prices, stock, blueprints, rumours
+      residents.ts              one active settlement's schedules, walking, loot runs
       exploration.ts            landmark visits and buffs
       effects.ts                particles, popups, camera shake
       input.ts                  keys, clicks, waypoints, zoom
@@ -111,18 +113,19 @@ src/
       persistence.ts            save/applySave
       offline.ts                the single away-time credit path
     render/                   per-frame drawing
-      worldRender.ts            world, nodes, towns, effects
+      worldRender.ts            world, nodes, towns, residents, effects
       vehicleRender.ts          the house and parts
       minimap.ts                minimap canvas
     art/                      procedural drawings, no assets
       primitives.ts             low-level shapes
-      nodeArt.ts / landmarkArt.ts / mobArt.ts / townArt.ts
+      nodeArt.ts / landmarkArt.ts / mobArt.ts / townArt.ts / residentArt.ts
       houseArt.ts / locoArt.ts / frameArt.ts / turretArt.ts / avatarArt.ts
       postcardArt.ts / moduleArt.ts / partIcon.ts
       parts/<category>.ts       per-part artwork, keyed by part id (cargo, comfort, core,
                                 defense, harvest, power, processing, weapons) + types.ts
     world/                    procedural world
       world.ts                  World: chunks, terrain, towns, landmarks, spawning
+      settlement.ts             deterministic houses, field, well, gate and watch anchors
       noise.ts                  seeded hash/noise helpers
       textures.ts               ground texture painting
     family/                   persistent family systems

@@ -116,5 +116,9 @@ stop autosave and unload handlers from writing the test run to the browser profi
   Open a town panel while docked and confirm the house stays put while browsing.
 - **Town watch:** park near a town with critters around; the town should fire, no new critters
   should spawn inside its ring, and a parked house inside the ring should not take contact hits.
+- **Homeport residents:** watch the four residents leave in the morning and return at night.
+  Sable should stay on the watchtower; the town panel should list each person's current activity.
+  Put a critter inside the town watch's range, let the watch kill it, and confirm Mira may sprint
+  for the spoils, or sensibly decide not to if another critter is close.
 
 See [saves.md](saves.md) for the save-specific cases.

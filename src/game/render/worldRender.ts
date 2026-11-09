@@ -6,10 +6,12 @@ import { drawAvatar } from '../art/avatarArt';
 import { drawMob } from '../art/mobArt';
 import { drawShadow } from '../art/primitives';
 import { drawTown } from '../art/townArt';
+import { drawResident } from '../art/residentArt';
 import { drawLandmark } from '../art/landmarkArt';
 import { drawSkyFx } from '../art/houseArt';
 import { drawNode } from '../art/nodeArt';
 import { TOWN_SAFE_RADIUS } from '../sim/towns';
+import { RESIDENT_TOWN_KEY } from '../sim/residents';
 import { CHUNK_PX } from '../world/world';
 
 export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: number) {
@@ -54,7 +56,8 @@ export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: num
     ctx.lineWidth = danger ? 1.2 : 0.7;
     ctx.beginPath(); ctx.arc(town.x, town.y, TOWN_SAFE_RADIUS, 0, TAU); ctx.stroke();
     ctx.restore();
-    drawTown(ctx, town, t, g.docked?.key === town.key);
+    const plan = town.key === RESIDENT_TOWN_KEY ? g.settlementPlan(town) : undefined;
+    drawTown(ctx, town, t, g.docked?.key === town.key, plan);
   }
   for (const lm of g.nearLandmarks) if (lm.x > x0 - 60 && lm.x < x1 + 60 && lm.y > y0 - 60 && lm.y < y1 + 80) drawLandmark(ctx, lm, t, !!g.visited[lm.key]);
 
@@ -63,6 +66,11 @@ export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: num
   g.world.nodesInRect(x0, y0, x1, y1 + 24, t, g.viewNodes);
   g.viewNodes.sort((a, b) => a.y - b.y);
   for (const n of g.viewNodes) drawNode(ctx, n, t);
+
+  for (const r of g.residents) {
+    if (r.x < x0 || r.x > x1 || r.y < y0 || r.y > y1) continue;
+    drawResident(ctx, r, t);
+  }
 
   for (const p of g.pickups) {
     const bob = Math.sin(t * 6 + p.x) * 1;
@@ -129,6 +137,7 @@ export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: num
     light(hl.x, hl.y, 34, `rgba(255,240,180,${a})`);
     light(g.v.x, g.v.y, 40 + g.st.light * 60, `rgba(255,${g.st.light ? 170 : 200},${g.st.light ? 70 : 120},${a * (g.st.light ? 0.9 : 0.6)})`);
     for (const town of g.nearTowns) light(town.x, town.y, 60, `rgba(255,190,100,${a * 0.8})`);
+    for (const r of g.residents) if (!r.indoors && r.def.role === 'watch') light(r.x + 3, r.y - 7, 28, `rgba(255,209,102,${a * 0.7})`);
     for (const n of g.viewNodes) {
       const gx = NODE[n.kind]?.glow;
       if (gx) light(n.x, n.y - 4, 16 * n.size, gx.replace(/,\s*[\d.]+\)$/, `,${a * 0.6})`));

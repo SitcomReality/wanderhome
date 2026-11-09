@@ -20,6 +20,8 @@ export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => 
   const tabs: Tab[] = town ? ['workshop', 'market', 'journal'] : ['journal'];
   const seenRes = RES_LIST.filter((r) => game.seenRes.includes(r));
   const defense = town ? game.townDefense(town) : null;
+  const home = town?.key === 'home';
+  const residents = home ? game.residents : [];
 
   return (
     <Modal wide onClose={onClose} title={town ? <span>🏘️ {town.name} <span className="text-sm font-normal text-stone-400">· {TERRAIN_INFO[town.biome].name}</span></span> : '📒 Travel Journal'}>
@@ -32,6 +34,23 @@ export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => 
         {defense && <span className="rounded-md border border-sky-300/20 bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-bold text-sky-200" title={`${defense.name}: about ${defense.damage} damage per shot at ${Math.round(defense.range)}px range. Armed from local goods and the workshop's wares.`}>🛡️ {defense.name}</span>}
         <span className="ml-auto text-xs text-stone-400">🪙 <b className="text-amber-200">{fmtNum(Math.floor(game.coins))}</b> · 📦 {Math.floor(game.cargoUsed())}/{game.cargoCap}</span>
       </div>
+
+      {home && residents.length > 0 && (
+        <div className="mb-3 rounded-xl border border-amber-300/15 bg-amber-400/5 px-2.5 py-2">
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-200/90">🏡 Around Homeport</span>
+            <span className="text-[10px] text-stone-500">{game.residentPhase === 'night' ? '🌙 mostly in for the night' : '☀️ out and about'}</span>
+          </div>
+          <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+            {residents.map((r) => (
+              <div key={r.def.id} className="flex items-baseline gap-1.5 text-[11px]">
+                <b className="shrink-0" style={{ color: r.def.color }}>{r.def.name}</b>
+                <span className="truncate text-stone-400">{r.activity}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {town && tab === 'workshop' && (
         <>

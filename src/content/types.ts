@@ -140,3 +140,15 @@ export interface FrameDef {
   comfort?: number; solarMul?: number;
   floor: string; floor2: string; rim: string; pattern: FramePattern; shop?: Shop;
 }
+
+// ---------------------------------------------------------------- residents
+/** A settlement's people. Size-neutral: a hamlet and a city district both have residents. */
+export type ResidentRole = 'gardener' | 'tinker' | 'kid' | 'watch';
+export type ResidentTrait = 'bold' | 'curious' | 'playful' | 'steady';
+export interface ResidentDef {
+  id: string; name: string; role: ResidentRole; trait: ResidentTrait;
+  /** body/clothing colour, used by the tiny procedural portrait in residentArt.ts */
+  color: string; accent: string;
+  /** a quiet line logged now and then while the player is nearby */
+  line: string;
+}

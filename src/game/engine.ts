@@ -5,13 +5,14 @@
  */
 import type { OfflineReport } from './sim/offline';
 import { CELL, DAY, SAVE_KEY, TAU, nominalSpeed, noCaps, zeroRes } from './core/constants';
-import { ActiveBuff, Beam, Bolt, BuildGoal, Cloud, DriveMode, HarvState, KnownTown, LogMsg, Mob, Particle, Pickup, Popup, ProcState, Projectile, Rumor, Settings, VisitedMark, WeaponState } from './core/types';
+import { ActiveBuff, Beam, Bolt, BuildGoal, Cloud, DayPhase, DriveMode, HarvState, KnownTown, LogMsg, Mob, Particle, Pickup, Popup, ProcState, Projectile, Resident, Rumor, Settings, Spoils, VisitedMark, WeaponState } from './core/types';
 import { BIOME, BuffDef, BuffStat, Cost, GRID_MAX_H, GRID_MAX_W, MobDef, RES_INFO, RES_LIST, Res, STARTER_PARTS, Terrain, locoSpeed } from '../content/index';
 import { ActiveVisitor, Crew, Toast, applyNewRunPerks, extraCargo, extraComfort, legacyTick, meta, onDiscover, permMul, syncBook } from './family/index';
 import { hashString } from './world/noise';
 import { sfxState } from './sfx';
 import { Stats, computeStats } from './vehicleStats';
 import { Landmark, ResNode, TILE, Town, World } from './world/world';
+import type { SettlementPlan } from './world/settlement';
 import * as Driving from './sim/driving';
 import * as Navigation from './sim/navigation';
 import * as Avatar from './sim/avatar';
@@ -25,6 +26,8 @@ import * as Input from './sim/input';
 import * as Workshop from './sim/workshop';
 import * as Plan from './sim/plan';
 import * as Rest from './sim/rest';
+import * as Residents from './sim/residents';
+import * as Settlement from './world/settlement';
 import * as Persistence from './sim/persistence';
 import * as Minimap from './render/minimap';
 import * as VehicleRender from './render/vehicleRender';
@@ -104,6 +107,14 @@ export class Game {
   townDefLog: Record<string, number> = {};
   /** Transient approach points for towns that sit on unreachable ground, keyed by town + locomotion. */
   townGates: Record<string, { x: number; y: number } | null> = {};
+  /** First-slice Homeport residents; transient, rebuilt from the clock when a save loads. */
+  residents: Resident[] = [];
+  residentTown: string | null = null;
+  residentSpoils: Spoils[] = [];
+  residentChatterT = 45;
+  residentGreeted = false;
+  residentPhase: DayPhase = 'day';
+  settlementPlans: Record<string, SettlementPlan> = {};
   log: LogMsg[] = [];
   lastInput = 0;
   keys = new Set<string>();
@@ -285,6 +296,7 @@ export class Game {
     Critters.updateMobs(this, dt);
     Towns.updateTownDefense(this, dt);
     Weapons.updateProjectiles(this, dt);
+    Residents.updateResidents(this, dt);
     Harvest.updatePickups(this, dt);
     Harvest.updateProcess(this, dt);
     Exploration.updateLandmarks(this, dt);
@@ -311,6 +323,7 @@ export class Game {
   hasSellable() { return Navigation.hasSellable(this); }
   townReachable(t: { key?: string; x: number; y: number }) { return Navigation.townReachable(this, t); }
   townApproach(t: { key: string; x: number; y: number }) { return Navigation.townApproach(this, t); }
+  settlementPlan(t: Town) { return (this.settlementPlans[t.key] ??= Settlement.planSettlement(this, t)); }
 
   // ---- sim/avatar ----
   exitVehicle() { return Avatar.exitVehicle(this); }
@@ -318,10 +331,10 @@ export class Game {
 
   // ---- sim/harvest ----
   hitNode(n: ResNode, power: number, yieldMul: number, collector: 'v' | 'a', fromX: number, fromY: number, finds?: { res: Res; chance: number }[]) { return Harvest.hitNode(this, n, power, yieldMul, collector, fromX, fromY, finds); }
-  dropPickup(x: number, y: number, kind: Res | 'coins', amt: number, home: 'v' | 'a' | null) { return Harvest.dropPickup(this, x, y, kind, amt, home); }
+  dropPickup(x: number, y: number, kind: Res | 'coins', amt: number, home: 'v' | 'a' | null, town = false) { return Harvest.dropPickup(this, x, y, kind, amt, home, town); }
 
   // ---- sim/weapons ----
-  damageMob(m: Mob, dmg: number, numbers = true, buff = true) { return Weapons.damageMob(this, m, dmg, numbers, buff); }
+  damageMob(m: Mob, dmg: number, numbers = true, buff = true, byTown = false) { return Weapons.damageMob(this, m, dmg, numbers, buff, byTown); }
   explode(x: number, y: number, r: number, dmg: number, scale = 1) { return Weapons.explode(this, x, y, r, dmg, scale); }
 
   // ---- sim/towns ----

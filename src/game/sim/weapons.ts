@@ -4,6 +4,7 @@ import { angDiff } from '../core/math';
 import { Mob } from '../core/types';
 import { onDiscover } from '../family/index';
 import { sfx } from '../sfx';
+import { onTownKill } from './residents';
 
 export function updateWeapons(g: Game, dt: number) {
   if (g.v.disabledT > 0) return;
@@ -106,14 +107,14 @@ export function updateWeapons(g: Game, dt: number) {
   }
 }
 
-export function damageMob(g: Game, m: Mob, dmg: number, numbers = true, buff = true) {
+export function damageMob(g: Game, m: Mob, dmg: number, numbers = true, buff = true, byTown = false) {
   if (buff) dmg *= g.buffMul('damage');
   m.hp -= dmg; m.flash = 0.08;
   if (numbers && g.settings.dmgNumbers && dmg >= 1) g.popup(m.x + (Math.random() - 0.5) * 6, m.y - m.def.r - 4, String(Math.round(dmg)), '#ffeb99');
-  if (m.hp <= 0) killMob(g, m);
+  if (m.hp <= 0) killMob(g, m, byTown);
 }
 
-export function killMob(g: Game, m: Mob) {
+export function killMob(g: Game, m: Mob, byTown = false) {
   const i = g.mobs.indexOf(m);
   if (i < 0) return;
   g.mobs.splice(i, 1);
@@ -125,9 +126,10 @@ export function killMob(g: Game, m: Mob) {
   g.shake(1.5);
   sfx('pop', 0.6 + Math.random() * 0.4);
   const d = g.difficulty(m.x, m.y);
-  g.dropPickup(m.x, m.y, 'coins', Math.max(1, Math.round(m.def.coins * d * (0.7 + Math.random() * 0.6))), null);
-  if (Math.random() < 0.35) g.dropPickup(m.x, m.y, 'scrap', 1 + Math.floor(Math.random() * 2 * d), null);
-  if (m.def.drop && Math.random() < 0.3) g.dropPickup(m.x, m.y, m.def.drop, 1, null);
+  g.dropPickup(m.x, m.y, 'coins', Math.max(1, Math.round(m.def.coins * d * (0.7 + Math.random() * 0.6))), null, byTown);
+  if (Math.random() < 0.35) g.dropPickup(m.x, m.y, 'scrap', 1 + Math.floor(Math.random() * 2 * d), null, byTown);
+  if (m.def.drop && Math.random() < 0.3) g.dropPickup(m.x, m.y, m.def.drop, 1, null, byTown);
+  if (byTown) onTownKill(g, m.x, m.y);
 }
 
 export function explode(g: Game, x: number, y: number, r: number, dmg: number, scale = 1) {
@@ -189,7 +191,7 @@ export function updateProjectiles(g: Game, dt: number) {
           g.burst(p.x, p.y, 6, ['#cfd8dc', '#fff'], 50, 0.3); g.shake(1);
         } else g.burst(p.x, p.y, 3, ['#fff6a0', '#fff'], 50, 0.2, 1);
         if (p.kind !== 'harpoon') { hit.vx += p.vx * 0.05; hit.vy += p.vy * 0.05; }
-        g.damageMob(hit, p.dmg, true, !p.town);
+        g.damageMob(hit, p.dmg, true, !p.town, p.town);
       } else if (p.kind === 'bubble') g.burst(p.x, p.y, 4, ['#bdf3ff', '#fff'], 30, 0.3, 1, 1);
       g.projectiles.splice(i, 1);
     }

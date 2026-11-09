@@ -49,6 +49,20 @@ skipped, and a town whose centre the current locomotion cannot cross is met at a
 edge gate. The house may still hug a coastline while looking for a way around, but it no
 longer commits to a spot it can never stand on.
 
+### Homeport's people (first slice)
+
+Homeport is the first settlement with residents. Four of them have names, roles and
+simple schedules: Mira tends the bean rows, Tobin mends things at the workshop, Pip plays
+on the green, and Sable keeps the watchtower. In the morning they leave their houses; at
+dusk they gather at the well; at night most go indoors, while Sable keeps watch. Their
+current activity is listed in Homeport's town panel.
+
+A town-watch kill outside the safe ring leaves spoils. Mira is bold enough to sprint for
+them if the coast is clear; if a critter is still nearby she hesitates, and if one gets
+close while she is running she abandons the idea and heads home for a while. Nobody dies
+over it. This is a one-town prototype: the plan and resident code are size-neutral, but
+the roster is deliberately gated to Homeport until the model has earned its keep.
+
 **Supplies & plans (I)** can be opened anywhere, not just in town. Each resource has a
 **Lock** (a floor that is never auto-sold) and a **Collect up to** limit (an upper bound
 where the house stops gathering it). A **plan** is a specific known part, frame,
@@ -67,6 +81,7 @@ also pull in the inputs for any installed processor that makes them.
 | Combat | weapons, projectiles, critters, damage, temporary breakdowns | `game/sim/weapons.ts`, `critters.ts` |
 | Towns and trade | docking, prices, stock, blueprints, rumours, auto-sell | `game/sim/towns.ts` |
 | Town watch | static town defenses, safe zones, no spawns near settlements | `game/sim/towns.ts` |
+| Residents | Homeport's first-slice schedules, walking and town-watch spoils | `game/sim/residents.ts`, `game/world/settlement.ts` |
 | Parking | timed stops, waypoint arrivals, town browsing | `game/sim/rest.ts` |
 | Supplies & plans | per-resource collection limits, build goals, plan-aware sell protection and foraging | `game/sim/plan.ts` |
 | Workshop | grid placement, synergies, locomotion/frames, expansion | `game/sim/workshop.ts`, `vehicleStats.ts` |
