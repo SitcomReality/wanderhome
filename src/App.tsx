@@ -34,6 +34,10 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef(game);
   gameRef.current = game;
+  // A debug handle for browser probes, only when explicitly requested with ?debug=1.
+  if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')) {
+    Object.defineProperty(globalThis, '__wanderhaus', { configurable: true, get: () => gameRef.current });
+  }
   const modalRef = useRef<ModalKind | null>(null);
   modalRef.current = modal;
   const playingRef = useRef(!title);

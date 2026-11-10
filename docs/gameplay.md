@@ -45,39 +45,65 @@ docked also parks it, giving you time to browse.
 
 Destinations respect the current locomotion. A waypoint snaps to the nearest open ground
 instead of landing in water or on a cliff, curiosities whose centre is unreachable are
-skipped, and a town whose centre the current locomotion cannot cross is met at a drivable
-edge gate. The house may still hug a coastline while looking for a way around, but it no
+skipped, and a town is met at its settlement gate (or a drivable edge if the gate is
+unreachable), so the house does not drive through the market to dock. The house may still hug a coastline while looking for a way around, but it no
 longer commits to a spot it can never stand on.
 
-### Homeport's people (first slice)
+### Settlements, from hamlet to city
 
-Homeport is the first settlement with residents. Four of them have names, roles and
-loose daily routines: Mira tends the bean rows, Tobin mends things at the workshop, Pip
-plays on the green, and Sable keeps the watchtower. In the morning they leave their houses
-at staggered times; during the day they potter around their work, take breaks at the well
-or green, and sometimes make a small side trip somewhere else in town. At dusk they gather
-at the well; at night most go indoors, while Sable keeps watch. Their current activity is
-listed in Homeport's town panel.
+Settlements come in four sizes: **hamlets** of two or three roofs, **villages** with a green
+and a workshop, **towns** with a proper tangle of streets, and rare **cities** with walls,
+taller houses and a market that never quite empties. Most places are small; a city is meant
+to be a landmark you remember finding. The minimap marker, safe ring, watch range, stock and
+footprint all scale with the tier.
 
-The routines are seeded by the in-game day, so the next morning is not an exact repeat:
-work spots, break times and the occasional side trip change. They are still lightweight
-walkers rather than pathfinders, but they no longer stand in one spot like garden
-ornaments: Mira works a hoe through the rows, Tobin taps at something small, Pip runs
-about, and Sable paces the watchtower.
+Every settlement is laid out deterministically from its seed. Radial streets and one or two
+ring roads connect a plaza, well, workshop, watchtower and gate. Each building has a footpath
+to the nearest street. Residents do not pathfind through walls: they walk to the nearest path
+node, follow the network toward their destination, leave it at the closest point, and cover
+the last few steps in a straight line. Each morning's work spots, breaks and small side trips
+are seeded by the day, so the same town has a different Tuesday.
 
-Their traits now break the routine too. Tobin gets curious about the parked house and its
-wheels, Pip follows Sable or chases a beetle, Sable walks a patrol to the gate, and Mira
-sizes up anything dangerous near the edge of town. They also react: honking the horn gets
-waves, a town-watch shot makes everyone outside look toward the tower, and the cat bolts.
-Homeport remembers the player's visits and honks in the run save; a familiar face gets a
-personal line when the house rolls back in. Biscuit the cat sleeps by the well, follows
-Sable on night watch, and treats Pip as a natural disaster.
+Architecture follows the land and its local goods. A taiga town has steep snow-capped roofs
+and stone footings; a desert town has flat adobe roofs and sun awnings; a jungle town stands
+on stilts under thatch; a crystal town sets pale stone with glowing facets. The town panel
+names the local style and what the place is known for. Fields plant a matching crop, and
+wealth adds flower boxes, lamps, banners and market stalls.
 
-A town-watch kill outside the safe ring leaves spoils. Mira is bold enough to sprint for
-them if the coast is clear; if a critter is still nearby she hesitates, and if one gets
-close while she is running she abandons the idea and heads home for a while. Nobody dies
-over it. This is a one-town prototype: the plan and resident code are size-neutral, but
-the roster is deliberately gated to Homeport until the model has earned its keep.
+### People with their own days
+
+Homeport's six hand-written residents are still there, but every other settlement now has
+its own roster too. A roster is generated from the town's seed: names, roles, colours, one of
+six traits, and a particular quirk such as *counts stairs* or *writes letters to distant
+lighthouses*. Roles include gardeners, tinkers, children, watchfolk, bakers and couriers, so
+a city feels like a place with several kinds of day happening at once.
+
+Residents leave home at staggered times, work, take seated breaks, socialise at the well or
+green, and go indoors at night (the watch stays out). Traits break the routine: the curious
+inspect the parked house, the playful follow a watcher or chase a beetle, the steady walk the
+gate, the bold size up critters, the dreamy watch clouds, and the wry tell terrible jokes at
+the well. Honking gets waves, a watch shot makes people look up, and the local cat bolts.
+Every town can have a cat, but not every town does. Chickens are not simulated; they are
+simply inevitable.
+
+Town memory is per settlement and persisted: visits, honks, trades, and the first and last
+day the house was seen. Individual residents also build a small bond when you meet them,
+honk near them or give them a lift. The panel shows a 👋 familiar badge after more than one
+day of acquaintance. A town-watch kill outside the safe ring can still tempt a bold resident
+into sprinting for the spoils; nobody dies over it.
+
+### Prosperity and moving day
+
+Selling goods, buying wares and learning blueprints fill a town's little budget. At 25, 50,
+75 and 100 prosperity it visibly gains market stalls, lamps, flower boxes and bunting, its
+watch gets a little stronger, and its workshop stocks an extra design. Prosperity never
+decays; a place you have traded with stays a little more comfortable.
+
+Sometimes a resident is waiting at the gate with a bundle and would like a lift to another
+town you have visited. Accept and they ride along, appearing in the HUD; dock at their
+destination and they step down, give you a small thank-you, and become part of that town.
+Their old home remembers that they left, and the new one remembers they arrived. The whole
+moving day survives a save.
 
 **Supplies & plans (I)** can be opened anywhere, not just in town. Each resource has a
 **Lock** (a floor that is never auto-sold) and a **Collect up to** limit (an upper bound
@@ -97,7 +123,7 @@ also pull in the inputs for any installed processor that makes them.
 | Combat | weapons, projectiles, critters, damage, temporary breakdowns | `game/sim/weapons.ts`, `critters.ts` |
 | Towns and trade | docking, prices, stock, blueprints, rumours, auto-sell | `game/sim/towns.ts` |
 | Town watch | static town defenses, safe zones, no spawns near settlements | `game/sim/towns.ts` |
-| Residents | Homeport's schedules, traits, reactions, memory and town-watch spoils | `game/sim/residents.ts`, `game/world/settlement.ts` |
+| Settlements & residents | procedural towns, path networks, local architecture, schedules, traits, memories, cats and moving day | `game/world/settlement.ts`, `game/sim/residents.ts` |
 | Parking | timed stops, waypoint arrivals, town browsing | `game/sim/rest.ts` |
 | Supplies & plans | per-resource collection limits, build goals, plan-aware sell protection and foraging | `game/sim/plan.ts` |
 | Workshop | grid placement, synergies, locomotion/frames, expansion | `game/sim/workshop.ts`, `vehicleStats.ts` |

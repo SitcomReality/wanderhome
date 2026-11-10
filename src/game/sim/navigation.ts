@@ -2,6 +2,7 @@
 import type { Game } from '../engine';
 import { TAU } from '../core/constants';
 import { LOCO, RES_LIST } from '../../content/index';
+import type { Town } from '../world/world';
 
 export function hasSellable(g: Game) { return RES_LIST.some((r) => g.autoSellRes[r] && g.sellable(r) >= 1); }
 
@@ -34,10 +35,27 @@ export function walkableNear(g: Game, x: number, y: number, maxR = 64) {
   return null;
 }
 
-/** Towns are met at a drivable edge when the centre itself is unreachable. Cached per locomotion. */
+function townFor(g: Game, t: { key: string; x: number; y: number }): Town | null {
+  if (t.key === 'home') return g.world.homeTown;
+  const near = g.nearTowns.find((q) => q.key === t.key);
+  if (near) return near;
+  const [rx, ry] = t.key.split(':').map(Number);
+  return Number.isFinite(rx) && Number.isFinite(ry) ? g.world.townInRegion(rx, ry) : null;
+}
+
+/**
+ * Towns are met at their gate when the streets allow it: a big city should not require
+ * driving through its houses to reach the market. Cached per town + locomotion.
+ */
 export function townApproach(g: Game, t: { key: string; x: number; y: number }) {
   const ck = t.key + ':' + g.loco;
   if (ck in g.townGates) return g.townGates[ck];
+  const town = townFor(g, t);
+  if (town) {
+    const plan = g.settlementPlan(town);
+    const gate = walkableNear(g, plan.gate.x, plan.gate.y, 48);
+    if (gate) { g.townGates[ck] = gate; return gate; }
+  }
   const pt = walkableNear(g, t.x, t.y, 64);
   g.townGates[ck] = pt;
   return pt;

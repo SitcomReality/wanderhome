@@ -3,10 +3,10 @@
 import { Game, SAVE_KEY } from './engine';
 import { meta, normalizeMeta, saveMeta, META_KEY } from './family/meta';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 const BACKUP_KEY = 'wanderhaus-backup-before-import';
 
-/** Bring an old run save up to the current version (v1–v4 → v5). Unknown fields are preserved. */
+/** Bring an old run save up to the current version (v1–v5 → v6). Unknown fields are preserved. */
 export function migrateRunSave(s: any): any {
   if (!s || typeof s !== 'object') return null;
   const out = { ...s };
@@ -15,6 +15,15 @@ export function migrateRunSave(s: any): any {
   if (v < 3) { out.runBiomes = out.runBiomes ?? []; out.biomeTime = out.biomeTime ?? {}; out.crew = out.crew ?? null; }
   if (v < 4) { out.collectCap = out.collectCap ?? {}; out.goal = out.goal ?? null; }
   if (v < 5) { out.residentMemory = out.residentMemory ?? null; }
+  if (v < 6) {
+    out.townWealth = out.townWealth ?? {};
+    out.townMemory = out.townMemory ?? {};
+    out.residentBonds = out.residentBonds ?? {};
+    out.movers = out.movers ?? [];
+    out.moveOffer = out.moveOffer ?? null;
+    out.departedByTown = out.departedByTown ?? {};
+    out.movedIn = out.movedIn ?? {};
+  }
   out.v = SAVE_VERSION;
   return out;
 }

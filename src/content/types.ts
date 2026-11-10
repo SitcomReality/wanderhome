@@ -143,8 +143,8 @@ export interface FrameDef {
 
 // ---------------------------------------------------------------- residents
 /** A settlement's people. Size-neutral: a hamlet and a city district both have residents. */
-export type ResidentRole = 'gardener' | 'tinker' | 'kid' | 'watch';
-export type ResidentTrait = 'bold' | 'curious' | 'playful' | 'steady';
+export type ResidentRole = 'gardener' | 'tinker' | 'kid' | 'watch' | 'baker' | 'courier';
+export type ResidentTrait = 'bold' | 'curious' | 'playful' | 'steady' | 'dreamy' | 'wry';
 export interface ResidentDef {
   id: string; name: string; role: ResidentRole; trait: ResidentTrait;
   /** body/clothing colour, used by the tiny procedural portrait in residentArt.ts */
@@ -153,6 +153,8 @@ export interface ResidentDef {
   line: string;
   /** a line for a return visit, once the player is a familiar face */
   remember: string;
+  /** one small, particular habit. Shown in the town panel and used by generated residents. */
+  quirk?: string;
 }
 
 

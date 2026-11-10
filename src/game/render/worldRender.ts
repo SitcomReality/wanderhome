@@ -11,8 +11,8 @@ import { drawCat } from '../art/catArt';
 import { drawLandmark } from '../art/landmarkArt';
 import { drawSkyFx } from '../art/houseArt';
 import { drawNode } from '../art/nodeArt';
-import { TOWN_SAFE_RADIUS } from '../sim/towns';
-import { RESIDENT_TOWN_KEY } from '../sim/residents';
+import { townSafeRadius } from '../sim/towns';
+import { settlementRadius } from '../world/settlement';
 import { CHUNK_PX } from '../world/world';
 
 export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: number) {
@@ -48,17 +48,19 @@ export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: num
   }
 
   for (const town of g.nearTowns) {
-    if (town.x < x0 - 60 || town.x > x1 + 60 || town.y < y0 - 60 || town.y > y1 + 60) continue;
-    const near = Math.hypot(town.x - g.v.x, town.y - g.v.y) < TOWN_SAFE_RADIUS;
-    const danger = g.mobs.some((m) => Math.hypot(m.x - town.x, m.y - town.y) < TOWN_SAFE_RADIUS + 20);
+    const plan = g.settlementPlan(town);
+    const reach = plan.radius + 70;
+    if (town.x + reach < x0 || town.x - reach > x1 || town.y + reach < y0 || town.y - reach > y1) continue;
+    const safe = townSafeRadius(town);
+    const near = Math.hypot(town.x - g.v.x, town.y - g.v.y) < safe;
+    const danger = g.mobs.some((m) => Math.hypot(m.x - town.x, m.y - town.y) < safe + 20);
     ctx.save();
     ctx.setLineDash([4, 7]);
     ctx.strokeStyle = danger ? 'rgba(255,209,102,0.32)' : `rgba(127,209,232,${near ? 0.22 : 0.1})`;
     ctx.lineWidth = danger ? 1.2 : 0.7;
-    ctx.beginPath(); ctx.arc(town.x, town.y, TOWN_SAFE_RADIUS, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.arc(town.x, town.y, safe, 0, TAU); ctx.stroke();
     ctx.restore();
-    const plan = town.key === RESIDENT_TOWN_KEY ? g.settlementPlan(town) : undefined;
-    drawTown(ctx, town, t, g.docked?.key === town.key, plan);
+    drawTown(ctx, town, t, g.docked?.key === town.key, plan, g.townWealth[town.key] ?? 0);
   }
   for (const lm of g.nearLandmarks) if (lm.x > x0 - 60 && lm.x < x1 + 60 && lm.y > y0 - 60 && lm.y < y1 + 80) drawLandmark(ctx, lm, t, !!g.visited[lm.key]);
 
@@ -72,7 +74,7 @@ export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: num
     if (r.x < x0 || r.x > x1 || r.y < y0 || r.y > y1) continue;
     drawResident(ctx, r, t);
   }
-  if (g.townCat && g.townCat.x > x0 && g.townCat.x < x1 && g.townCat.y > y0 && g.townCat.y < y1) drawCat(ctx, g.townCat, t);
+  for (const c of Object.values(g.townCats)) if (c.x > x0 && c.x < x1 && c.y > y0 && c.y < y1) drawCat(ctx, c, t);
 
   for (const p of g.pickups) {
     const bob = Math.sin(t * 6 + p.x) * 1;
@@ -138,8 +140,9 @@ export function render(g: Game, ctx: CanvasRenderingContext2D, W: number, H: num
     const hl = g.toWorld(g.hw + 26, 0);
     light(hl.x, hl.y, 34, `rgba(255,240,180,${a})`);
     light(g.v.x, g.v.y, 40 + g.st.light * 60, `rgba(255,${g.st.light ? 170 : 200},${g.st.light ? 70 : 120},${a * (g.st.light ? 0.9 : 0.6)})`);
-    for (const town of g.nearTowns) light(town.x, town.y, 60, `rgba(255,190,100,${a * 0.8})`);
+    for (const town of g.nearTowns) light(town.x, town.y, Math.max(55, settlementRadius(town) * 0.7), `rgba(255,190,100,${a * 0.8})`);
     for (const r of g.residents) if (!r.indoors && r.def.role === 'watch') light(r.x + 3, r.y - 7, 28, `rgba(255,209,102,${a * 0.7})`);
+    for (const c of Object.values(g.townCats)) light(c.x, c.y - 4, 12, `rgba(255,220,150,${a * 0.3})`);
     for (const n of g.viewNodes) {
       const gx = NODE[n.kind]?.glow;
       if (gx) light(n.x, n.y - 4, 16 * n.size, gx.replace(/,\s*[\d.]+\)$/, `,${a * 0.6})`));

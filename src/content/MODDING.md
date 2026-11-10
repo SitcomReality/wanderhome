@@ -12,6 +12,7 @@ registry (`index.ts`) prints a console warning for any id that doesn't resolve.
 | `nodes.ts` | Harvestable world objects: a drawing `shape` + `colors` palette + resource |
 | `mobs.ts` | Critters: shape, stats, biomes, drops, night-only/swimming/flying |
 | `landmarks.ts` | Points of interest: rewards, buffs, rumours, map reveals |
+| `residents.ts` | Homeport's hand-written people plus the name, line, quirk and role vocab used to generate every other settlement |
 | `locomotion.ts` | Wheels, legs, fins… speed per ground |
 | `frames.ts` | Chassis floors |
 | `parts/*.ts` | Vehicle modules, one file per category |
@@ -50,6 +51,11 @@ it a blueprint sold in matching towns (`where: ['desert', '#cold']`, tier 1–3)
 off to make it a starter part. Set `art: 'steam'` to borrow an existing part's drawing.
 Without that, it gets a generic coloured drawing for its category. Supported behaviours are
 the optional fields on `ModuleDef` (power, burns, cargo, harvest, weapon, process, comfort…).
+
+**A new resident flavour:** add names, surnames, quirks or role lines to `residents.ts`.
+Generated residents are deterministic per town and index, so they need no save entries; only
+the `ResidentDef` fields (`name`, `role`, `trait`, `color`, `accent`, `line`, `remember`,
+`quirk`) are stored when someone moves between towns.
 
 **A new landmark:** add to `landmarks.ts` with an existing `shape`, `where`, `weight` and some
 `reward`/`buff`/`rumor`/`reveal`.

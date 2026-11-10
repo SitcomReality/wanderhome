@@ -3,11 +3,16 @@ import type { Game } from '../../game/engine';
 import { fmtNum } from '../../game/engine';
 import { RES_LIST, RES_INFO, TERRAIN_INFO, PART, TIER_COLOR } from '../../content/index';
 import { TILE } from '../../game/world/world';
-import { Modal, Btn, PartIcon, CostView } from '../common/ui';
+import { SETTLEMENT_TIERS, settlementStyle } from '../../game/world/settlement';
+import { Modal, Btn, PartIcon, CostView, Bar } from '../common/ui';
 import { PartTraits, LocoTerrain } from '../common/PartInfo';
 import { LockControl } from './Stores';
 
 type Tab = 'market' | 'workshop' | 'journal';
+
+const ROLE_LABEL: Record<string, string> = {
+  gardener: 'gardener', tinker: 'tinker', kid: 'kid', watch: 'watch', baker: 'baker', courier: 'courier',
+};
 
 export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => void; tick: number }) {
   void tick;
@@ -16,43 +21,100 @@ export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => 
   const [, force] = useState(0);
   const refresh = () => force((n) => n + 1);
   const dist = (x: number, y: number) => Math.round(Math.hypot(x - game.v.x, y - game.v.y) / TILE);
+  const goTown = (key: string, x: number, y: number) => {
+    let t = key === 'home' ? game.world.homeTown : game.world.townInRegion(...key.split(':').map(Number) as [number, number]);
+    if (!t) t = game.nearTowns.find((q) => q.key === key) ?? null;
+    const p = t ? game.townApproach(t) : null;
+    game.setWaypoint(p?.x ?? x, p?.y ?? y);
+    onClose();
+  };
   const known = Object.entries(game.towns);
   const tabs: Tab[] = town ? ['workshop', 'market', 'journal'] : ['journal'];
   const seenRes = RES_LIST.filter((r) => game.seenRes.includes(r));
   const defense = town ? game.townDefense(town) : null;
-  const home = town?.key === 'home';
-  const residents = home ? game.residents : [];
+  const prosperity = town ? game.townProsperity(town) : null;
+  const style = town ? settlementStyle(town) : null;
+  const info = town ? SETTLEMENT_TIERS[town.tier] : null;
+  const residents = town ? game.residents.filter((r) => r.townKey === town.key) : [];
+  const cat = town ? game.townCats[town.key] : undefined;
+  const memory = town ? game.townMemory[town.key] : undefined;
+  const offer = town && game.moveOffer?.fromKey === town.key ? game.moveOffer : null;
 
   return (
-    <Modal wide onClose={onClose} title={town ? <span>🏘️ {town.name} <span className="text-sm font-normal text-stone-400">· {TERRAIN_INFO[town.biome].name}</span></span> : '📒 Travel Journal'}>
+    <Modal wide onClose={onClose} title={town ? <span>🏘️ {town.name} <span className="text-sm font-normal text-stone-400">· {info?.label ?? 'settlement'} · {TERRAIN_INFO[town.biome].name}</span></span> : '📒 Travel Journal'}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         {tabs.map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-3 py-1 text-xs font-black uppercase tracking-wider ${tab === t ? 'bg-amber-400 text-stone-900' : 'bg-white/5 text-stone-300 hover:bg-white/10'}`}>
             {t === 'workshop' ? '📐 Workshop' : t === 'market' ? '⚖️ Market' : '📒 Journal'}
           </button>
         ))}
-        {defense && <span className="rounded-md border border-sky-300/20 bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-bold text-sky-200" title={`${defense.name}: about ${defense.damage} damage per shot at ${Math.round(defense.range)}px range. Armed from local goods and the workshop's wares.`}>🛡️ {defense.name}</span>}
+        {defense && <span className="rounded-md border border-sky-300/20 bg-sky-400/10 px-1.5 py-0.5 text-[10px] font-bold text-sky-200" title={`${defense.name}: about ${defense.damage} damage per shot at ${Math.round(defense.range)}px range. Armed from local goods, prosperity and the workshop's wares.`}>🛡️ {defense.name}</span>}
         <span className="ml-auto text-xs text-stone-400">🪙 <b className="text-amber-200">{fmtNum(Math.floor(game.coins))}</b> · 📦 {Math.floor(game.cargoUsed())}/{game.cargoCap}</span>
       </div>
 
-      {home && residents.length > 0 && (
-        <div className="mb-3 rounded-xl border border-amber-300/15 bg-amber-400/5 px-2.5 py-2">
+      {town && info && prosperity && style && (
+        <div className="mb-3 grid gap-2 md:grid-cols-[1.15fr_1fr]">
+          <div className="rounded-xl border border-amber-300/15 bg-amber-400/5 px-3 py-2">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <b className="text-sm text-amber-100">{info.icon} {info.label === 'city' ? 'A proper city' : info.label === 'town' ? 'A busy town' : info.label === 'village' ? 'A village' : 'A tiny hamlet'}</b>
+              <span className="text-[10px] text-stone-400">{game.residentTowns[town.key] ? residents.length : town.pop} {(game.residentTowns[town.key] ? residents.length : town.pop) === 1 ? 'resident' : 'residents'} · {info.blurb}</span>
+            </div>
+            <div className="mt-1 text-[11px] text-stone-300"><b className="text-stone-200">{style.name}</b> · local character: {style.specialty}.</div>
+            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-stone-500">
+              <span title="Visits and trades are remembered per town">🧠 {memory?.visits ?? 0} visit{memory?.visits === 1 ? '' : 's'} · {memory?.trades ?? 0} traded</span>
+              {(memory?.visits ?? 0) > 1 && <span className="font-bold text-amber-200">👋 familiar face</span>}
+              {game.movers.length > 0 && <span className="text-sky-200">🚚 {game.movers.length} passenger{game.movers.length > 1 ? 's' : ''} aboard</span>}
+            </div>
+          </div>
+          <div className="rounded-xl border border-emerald-300/15 bg-emerald-400/5 px-3 py-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-200/90">{prosperity.icon} {prosperity.label}</span>
+              <span className="text-[10px] tabular-nums text-stone-400">{Math.round(prosperity.value)} / 100</span>
+            </div>
+            <Bar value={prosperity.value} max={100} color="#6ee7b7" className="my-1.5" />
+            <div className="text-[10px] leading-relaxed text-stone-400">{prosperity.blurb}. {prosperity.value >= 100 ? 'This town is as comfortable as it gets.' : `Trading here fills the town's little budget; at ${prosperity.next} it will feel a change.`}</div>
+          </div>
+        </div>
+      )}
+
+      {offer && (
+        <div className="mb-3 rounded-xl border border-sky-300/25 bg-sky-400/10 px-3 py-2">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <b className="text-sm text-sky-100">🧳 {offer.def.name} would like a lift to {offer.toName}</b>
+            <span className="text-[10px] uppercase tracking-wider text-sky-300/80">{ROLE_LABEL[offer.def.role]} · {offer.def.trait}</span>
+          </div>
+          <div className="mt-0.5 text-[11px] text-stone-300">They have people in {offer.toName}, or at least a very good excuse.</div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <Btn active onClick={() => { game.takeMover(); refresh(); }}>Take them aboard</Btn>
+            <Btn onClick={() => { game.dismissMoveOffer(); refresh(); }}>Not today</Btn>
+            <span className="text-[10px] text-stone-500">They will ride along until you dock at {offer.toName}.</span>
+          </div>
+        </div>
+      )}
+
+      {town && residents.length > 0 && (
+        <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-2">
           <div className="mb-1.5 flex items-center justify-between gap-2">
-            <span className="text-[10px] font-black uppercase tracking-wider text-amber-200/90">🏡 Around Homeport</span>
-            <span className="text-[10px] text-stone-500" title={`Visits: ${game.residentMemory.visits} · honks: ${game.residentMemory.honks}`}>{game.residentPhase === 'night' ? '🌙 mostly in for the night' : '☀️ out and about'}{game.residentMemory.visits > 1 ? ' · 👋 familiar' : ''}</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-stone-300">🏡 Around {town.name}</span>
+            <span className="text-[10px] text-stone-500">{game.residentPhase === 'night' ? '🌙 mostly in for the night' : game.residentPhase === 'dusk' ? '🌆 gathering for the evening' : '☀️ out and about'}</span>
           </div>
-          <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
-            {residents.map((r) => (
-              <div key={r.def.id} className="flex items-baseline gap-1.5 text-[11px]">
-                <b className="shrink-0" style={{ color: r.def.color }}>{r.def.name}</b>
-                <span className="truncate text-stone-400">{r.activity}</span>
-              </div>
-            ))}
+          <div className="grid max-h-48 gap-x-4 gap-y-1 overflow-y-auto pr-1 sm:grid-cols-2">
+            {residents.map((r) => {
+              const bond = game.residentBonds[r.def.id];
+              return (
+                <div key={r.def.id} className="flex items-baseline gap-1.5 text-[11px]" title={`${ROLE_LABEL[r.def.role] ?? r.def.role} · ${r.def.trait}${r.def.quirk ? ` · ${r.def.quirk}` : ''}`}>
+                  <b className="shrink-0" style={{ color: r.def.color }}>{r.def.name}</b>
+                  <span className="shrink-0 text-[9px] uppercase tracking-wide text-stone-600">{ROLE_LABEL[r.def.role] ?? r.def.role}</span>
+                  <span className="truncate text-stone-400">{r.activity}</span>
+                  {(bond?.met ?? 0) > 1 && <span className="shrink-0 text-[9px] text-amber-300" title={`You have met ${bond?.met} days · ${bond?.honks ?? 0} honks · ${bond?.rides ?? 0} rides`}>👋</span>}
+                </div>
+              );
+            })}
           </div>
-          {game.townCat && (
+          {cat && (
             <div className="mt-1 flex items-baseline gap-1.5 border-t border-white/5 pt-1 text-[11px]">
-              <b className="shrink-0 text-amber-200">🐈 {game.townCat.name}</b>
-              <span className="truncate text-stone-400">{game.townCat.activity}</span>
+              <b className="shrink-0 text-amber-200">🐈 {cat.name}</b>
+              <span className="truncate text-stone-400">{cat.activity}</span>
             </div>
           )}
         </div>
@@ -94,7 +156,7 @@ export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => 
 
       {town && tab === 'market' && (
         <>
-          <p className="mb-2 text-[11px] text-stone-500">Selling lots floods the local market, and prices recover over time. Buy where something's cheap and sell it where it's scarce. Locked amounts are never auto-sold. Press <b className="text-stone-300">I</b> anywhere to edit locks, collection limits, and build plans in Supplies.</p>
+          <p className="mb-2 text-[11px] text-stone-500">Selling lots floods the local market, and prices recover over time. Every sale also fills this town's budget, which slowly improves its market, watch and streets. Locked amounts are never auto-sold. Press <b className="text-stone-300">I</b> anywhere to edit locks, collection limits, and build plans in Supplies.</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-[10px] uppercase tracking-wider text-stone-500">
@@ -118,7 +180,7 @@ export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => 
                         {best ? (
                           <span className={margin > 1.1 ? 'text-emerald-300' : 'text-stone-500'}>
                             {best.sell[r].toFixed(1)} @ {best.name} ({dist(best.x, best.y)}t){margin > 1.1 && <b> +{Math.round((margin - 1) * 100)}%</b>}
-                            <button className="ml-1 rounded bg-sky-400/20 px-1 text-sky-200 hover:bg-sky-400/40" onClick={() => { game.setWaypoint(best.x, best.y); onClose(); }}>go</button>
+                            <button className="ml-1 rounded bg-sky-400/20 px-1 text-sky-200 hover:bg-sky-400/40" onClick={() => goTown(best.key, best.x, best.y)}>go</button>
                           </span>
                         ) : <span className="text-stone-600">—</span>}
                       </td>
@@ -147,27 +209,33 @@ export function TownPanel({ game, onClose, tick }: { game: Game; onClose: () => 
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="text-left uppercase tracking-wider text-stone-500">
-                  <tr><th className="py-1">Town</th><th>Biome</th><th>Dist</th>{seenRes.map((r) => <th key={r} title={RES_INFO[r].name}>{RES_INFO[r].icon}</th>)}<th>Workshop</th><th></th></tr>
+                  <tr><th className="py-1">Town</th><th>Kind</th><th>Biome</th><th>Dist</th><th>Places</th>{seenRes.map((r) => <th key={r} title={RES_INFO[r].name}>{RES_INFO[r].icon}</th>)}<th>Workshop</th><th></th></tr>
                 </thead>
                 <tbody>
-                  {known.sort((a, b) => dist(a[1].x, a[1].y) - dist(b[1].x, b[1].y)).map(([k, kt]) => (
-                    <tr key={k} className="border-t border-white/5">
-                      <td className="py-1.5 font-bold text-stone-200">{kt.name}</td>
-                      <td className="text-stone-400">{TERRAIN_INFO[kt.biome].name}</td>
-                      <td className="text-stone-400">{dist(kt.x, kt.y)}t</td>
-                      {seenRes.map((r) => {
-                        const best = game.bestKnown(r);
-                        const isBest = best?.key === k && known.length > 1;
-                        return <td key={r} className={isBest ? 'font-black text-emerald-300' : 'text-stone-300'}>{kt.sell[r].toFixed(0)}</td>;
-                      })}
-                      <td>
-                        <span className="flex gap-0.5">
-                          {kt.stock.map((id) => <span key={id} title={`${PART[id]?.name}${game.known.includes(id) ? ' (known)' : ''}`} className={game.known.includes(id) ? 'opacity-35' : ''}><PartIcon id={id} size={20} /></span>)}
-                        </span>
-                      </td>
-                      <td><button className="rounded bg-sky-400/20 px-1.5 text-sky-200 hover:bg-sky-400/40" onClick={() => { game.setWaypoint(kt.x, kt.y); onClose(); }}>go</button></td>
-                    </tr>
-                  ))}
+                  {known.sort((a, b) => dist(a[1].x, a[1].y) - dist(b[1].x, b[1].y)).map(([k, kt]) => {
+                    const tier = kt.tier ? SETTLEMENT_TIERS[kt.tier] : null;
+                    const wealth = game.townWealth[k] ?? 0;
+                    return (
+                      <tr key={k} className="border-t border-white/5">
+                        <td className="py-1.5 font-bold text-stone-200">{kt.name}</td>
+                        <td className="text-stone-400">{tier ? `${tier.icon} ${tier.label}` : k === 'home' ? '🏡 village' : '—'}</td>
+                        <td className="text-stone-400">{TERRAIN_INFO[kt.biome].name}</td>
+                        <td className="text-stone-400">{dist(kt.x, kt.y)}t</td>
+                        <td className="text-stone-400">{kt.pop ?? '—'} · {wealth >= 75 ? '✨' : wealth >= 50 ? '🏮' : wealth >= 25 ? '🪴' : '🌱'}</td>
+                        {seenRes.map((r) => {
+                          const best = game.bestKnown(r);
+                          const isBest = best?.key === k && known.length > 1;
+                          return <td key={r} className={isBest ? 'font-black text-emerald-300' : 'text-stone-300'}>{kt.sell[r].toFixed(0)}</td>;
+                        })}
+                        <td>
+                          <span className="flex gap-0.5">
+                            {kt.stock.map((id) => <span key={id} title={`${PART[id]?.name}${game.known.includes(id) ? ' (known)' : ''}`} className={game.known.includes(id) ? 'opacity-35' : ''}><PartIcon id={id} size={20} /></span>)}
+                          </span>
+                        </td>
+                        <td><button className="rounded bg-sky-400/20 px-1.5 text-sky-200 hover:bg-sky-400/40" onClick={() => goTown(k, kt.x, kt.y)}>go</button></td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

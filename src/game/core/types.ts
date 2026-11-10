@@ -29,7 +29,7 @@ export interface LogMsg { id: number; t: number; msg: string; color: string }
 export interface WeaponState { idx: number; def: ModuleDef; cd: number; angle: number; recoil: number; range: number; rate: number; dry: boolean }
 export interface HarvState { idx: number; def: ModuleDef; cd: number; range: number }
 export interface ProcState { idx: number; def: ModuleDef; t: number; rate: number }
-export interface KnownTown { name: string; x: number; y: number; biome: Terrain; sell: Record<Res, number>; t: number; stock: string[] }
+export interface KnownTown { name: string; x: number; y: number; biome: Terrain; sell: Record<Res, number>; t: number; stock: string[]; tier?: 'hamlet' | 'village' | 'town' | 'city'; pop?: number }
 export interface Rumor { id: number; text: string; partId: string; where: string; t: number }
 
 /** What the house is currently gathering for. Costs are derived from content, never saved. */
@@ -40,11 +40,16 @@ export interface BuildGoal { kind: BuildGoalKind; id: string }
 // ---------------------------------------------------------------- residents
 export type DayPhase = 'day' | 'dusk' | 'night';
 export type ResidentState = 'walk' | 'work' | 'play' | 'gather' | 'rest' | 'social' | 'react' | 'home' | 'loot' | 'flee';
-/** A transient person in the active settlement. The first slice only populates Homeport. */
+/** A transient person in one of the nearby settlements. */
 export interface Resident {
   def: ResidentDef;
+  /** Which settlement this person belongs to. */
+  townKey: string;
   x: number; y: number;
   tx: number; ty: number;
+  /** Path-following route to the current target, followed one waypoint at a time. */
+  route: { x: number; y: number }[];
+  routeAt: number;
   home: { x: number; y: number };
   activity: string;
   spot: 'home' | 'field' | 'workshop' | 'well' | 'green' | 'watch' | 'wild' | 'gate';
@@ -79,9 +84,9 @@ export interface Resident {
   traitAt: number;
 }
 /** A town-watch kill outside the ring, waiting for a brave resident or a careful one. */
-export interface Spoils { x: number; y: number; t: number; claimed: boolean; hesitated: boolean }
+export interface Spoils { x: number; y: number; t: number; claimed: boolean; hesitated: boolean; townKey: string }
 
-/** What Homeport remembers about the player, persisted across sessions. */
+/** Homeport's original memory record; still persisted for save compatibility. */
 export interface ResidentMemory {
   visits: number;
   honks: number;
@@ -91,8 +96,49 @@ export interface ResidentMemory {
   lastHonk: number;
 }
 
+/** What a settlement remembers about the player, persisted across sessions. */
+export interface TownMemory {
+  visits: number;
+  honks: number;
+  trades: number;
+  firstDay: number;
+  lastDay: number;
+  lastVisit: number;
+  lastHonk: number;
+}
+
+/** What one resident remembers about the player. Sparse: only people actually met. */
+export interface ResidentBond {
+  met: number;
+  honks: number;
+  rides: number;
+  lastDay: number;
+}
+
+/** A resident who has asked for, and been given, a lift to another settlement. */
+export interface Mover {
+  def: ResidentDef;
+  fromKey: string;
+  fromName: string;
+  toKey: string;
+  toName: string;
+  acceptedAt: number;
+  gift: { coins?: number; res?: { kind: Res; amt: number } };
+}
+
+/** A resident waiting at the dock for a ride. */
+export interface MoveOffer {
+  def: ResidentDef;
+  fromKey: string;
+  fromName: string;
+  toKey: string;
+  toName: string;
+  since: number;
+}
+
 /** The town cat. Transient, like the residents, but with strong opinions. */
 export interface TownCat {
+  townKey: string;
   name: string;
   color: string;
   accent: string;

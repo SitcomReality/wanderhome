@@ -78,13 +78,24 @@ export default async function ({ page, assert, screenshot, log }) {
 }
 ```
 
-See `test/firsts.mjs`, `test/planner.mjs`, and `test/park.mjs` for working versions:
+See `test/firsts.mjs`, `test/planner.mjs`, `test/park.mjs`, `test/settlements.mjs` and
+`test/settlement-save.mjs` for working versions:
 
 ```bash
 node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/firsts.mjs
 node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/planner.mjs
 node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/park.mjs
+node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/settlements.mjs
+node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/settlement-save.mjs
+node ../webgame-tools/bin/webgame-harness.mjs run --scenario test/settlements-visual.mjs
 ```
+
+The visual scenario captures a prosperous Homeport, a lift request and a city at 100 prosperity
+under `.artifacts/webgame/`.
+
+The settlement scenarios open the page with `?debug=1`, which exposes a
+`window.__wanderhaus` handle for probing layouts, resident routes and save migration. The
+handle is absent in normal play and is only used by tests.
 
 Useful harness commands:
 
@@ -99,7 +110,7 @@ stop autosave and unload handlers from writing the test run to the browser profi
 
 ## What to check manually
 
-- **Old saves:** load a save from the previous version; no crash, sensible defaults. A v4 save must migrate to v5 with empty resident memory; a v5 save must round-trip `residentMemory`.
+- **Old saves:** load a save from the previous version; no crash, sensible defaults. A v5 save must migrate to v6 with Homeport's old `residentMemory` copied into `townMemory.home`; a v6 save must round-trip town wealth, bonds, moved-in residents and passengers.
 - **Offline:** hide the tab or reload after a wait; the report appears once and time is not
   credited twice.
 - **Retirement:** retire when eligible; family data persists, lifetime totals count once,
@@ -116,13 +127,21 @@ stop autosave and unload handlers from writing the test run to the browser profi
   Open a town panel while docked and confirm the house stays put while browsing.
 - **Town watch:** park near a town with critters around; the town should fire, no new critters
   should spawn inside its ring, and a parked house inside the ring should not take contact hits.
-- **Homeport residents:** watch the four residents leave in the morning and return at night.
-  They should potter around their work spots, take seated breaks, and occasionally visit another
-  part of town. Sable should stay on the watchtower; the town panel should list each person's
-  current activity and Biscuit's. Let a day roll over and confirm work spots/break times are not
-  identical. Honk while docked and confirm waves; let the town watch fire and confirm residents
-  look toward the tower and Biscuit bolts. Leave and return to Homeport; a resident should
-  remember the visit. Put a critter inside the town watch's range, let the watch kill it, and
-  confirm Mira may sprint for the spoils, or sensibly decide not to if another critter is close.
+- **Settlement scale:** find a hamlet and a city; the city should have many more houses,
+  roads, taller buildings, a wall, a bigger safe ring and more people. Most settlements should
+  be small. No trees should grow through the streets or fields.
+- **Residents everywhere:** dock at a few towns; each panel should list its own names, roles,
+  traits, quirks and activities. Watch them follow the paths rather than walk through houses.
+  Let a day roll over and confirm work spots and break times are not identical. Honk while
+  docked and confirm waves; let the town watch fire and confirm residents look toward the tower.
+- **Prosperity:** trade a full cargo into one town and watch its panel bar rise. At the next
+  threshold it should gain market/street details, stock and watch strength. The state should
+  survive a reload.
+- **Moving day:** after visiting two towns, wait for a lift request, take the resident aboard,
+  dock at the named destination, and confirm they leave the house, give a thank-you, and appear
+  in the destination roster. Save and reload mid-ride: they should still be aboard.
+- **Town watch spoils:** put a critter inside a town watch's range, let the watch kill it, and
+  confirm a bold resident may sprint for the spoils, or sensibly decide not to if a critter is
+  close.
 
 See [saves.md](saves.md) for the save-specific cases.

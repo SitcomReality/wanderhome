@@ -5,8 +5,8 @@
  */
 import type { OfflineReport } from './sim/offline';
 import { CELL, DAY, SAVE_KEY, TAU, nominalSpeed, noCaps, zeroRes } from './core/constants';
-import { ActiveBuff, Beam, Bolt, BuildGoal, Cloud, DayPhase, DriveMode, HarvState, KnownTown, LogMsg, Mob, Particle, Pickup, Popup, ProcState, Projectile, Resident, ResidentMemory, Rumor, Settings, Spoils, TownCat, VisitedMark, WeaponState } from './core/types';
-import { BIOME, BuffDef, BuffStat, Cost, GRID_MAX_H, GRID_MAX_W, MobDef, RES_INFO, RES_LIST, Res, STARTER_PARTS, Terrain, locoSpeed } from '../content/index';
+import { ActiveBuff, Beam, Bolt, BuildGoal, Cloud, DayPhase, DriveMode, HarvState, KnownTown, LogMsg, Mob, MoveOffer, Mover, Particle, Pickup, Popup, ProcState, Projectile, Resident, ResidentBond, ResidentMemory, Rumor, Settings, Spoils, TownCat, TownMemory, VisitedMark, WeaponState } from './core/types';
+import { BIOME, BuffDef, BuffStat, Cost, GRID_MAX_H, GRID_MAX_W, MobDef, RES_INFO, RES_LIST, Res, ResidentDef, STARTER_PARTS, Terrain, locoSpeed } from '../content/index';
 import { ActiveVisitor, Crew, Toast, applyNewRunPerks, extraCargo, extraComfort, legacyTick, meta, onDiscover, permMul, syncBook } from './family/index';
 import { hashString } from './world/noise';
 import { sfxState } from './sfx';
@@ -107,17 +107,30 @@ export class Game {
   townDefLog: Record<string, number> = {};
   /** Transient approach points for towns that sit on unreachable ground, keyed by town + locomotion. */
   townGates: Record<string, { x: number; y: number } | null> = {};
-  /** First-slice Homeport residents; transient, rebuilt from the clock when a save loads. */
+  /** Residents of all settlements near the house. Transient, rebuilt from the clock on load. */
   residents: Resident[] = [];
-  residentTown: string | null = null;
   residentSpoils: Spoils[] = [];
   residentChatterT = 45;
   residentGreeted = false;
   residentPhase: DayPhase = 'day';
+  /** Kept for save compatibility; Homeport's memory now also lives in townMemory.home. */
   residentMemory: ResidentMemory = { visits: 0, honks: 0, firstDay: -1, lastDay: -1, lastVisit: 0, lastHonk: 0 };
-  townCat: TownCat | null = null;
   residentHonkLog = 0;
   residentWatchReact = 0;
+  /** Per-town memory, trade prosperity, and the people who remember the house. */
+  townMemory: Record<string, TownMemory> = {};
+  residentBonds: Record<string, ResidentBond> = {};
+  townWealth: Record<string, number> = {};
+  /** Active settlement context for residents, keyed by town. */
+  residentTowns: Record<string, Town> = {};
+  townCats: Record<string, TownCat> = {};
+  movers: Mover[] = [];
+  moveOffer: MoveOffer | null = null;
+  /** Residents who have left (and arrived) by house; persisted so a moving day stays moved. */
+  departedByTown: Record<string, string[]> = {};
+  movedIn: Record<string, ResidentDef[]> = {};
+  /** Transient: don't pester the same town for a lift twice in one afternoon. */
+  moveCooldown: Record<string, number> = {};
   settlementPlans: Record<string, SettlementPlan> = {};
   log: LogMsg[] = [];
   lastInput = 0;
@@ -328,9 +341,12 @@ export class Game {
   townReachable(t: { key?: string; x: number; y: number }) { return Navigation.townReachable(this, t); }
   townApproach(t: { key: string; x: number; y: number }) { return Navigation.townApproach(this, t); }
   settlementPlan(t: Town) { return (this.settlementPlans[t.key] ??= Settlement.planSettlement(this, t)); }
+  townStyle(t: Town) { return Settlement.settlementStyle(t); }
   residentsHonk() { return Residents.onHonk(this); }
   residentsWatchFire(t: Town, x: number, y: number) { return Residents.onWatchFire(this, t, x, y); }
-  residentsVisit() { return Residents.onVisit(this); }
+  residentsVisit(t?: Town) { return Residents.onVisit(this, t ?? this.docked ?? this.world.homeTown); }
+  takeMover() { return Residents.acceptMover(this); }
+  dismissMoveOffer() { return Residents.dismissMove(this); }
 
   // ---- sim/avatar ----
   exitVehicle() { return Avatar.exitVehicle(this); }
@@ -361,6 +377,8 @@ export class Game {
   autoSellNow(t: Town) { return Towns.autoSellNow(this, t); }
   makeRumor(t: { x: number; y: number }) { return Towns.makeRumor(this, t); }
   townDefense(t: Town) { return Towns.townDefense(this, t); }
+  townProsperity(t: Town) { return Towns.townProsperity(this, t); }
+  townSafeRadius(t: Town) { return Towns.townSafeRadius(t); }
   inTownSafeZone(x = this.v.x, y = this.v.y) { return Towns.inTownSafeZone(this, x, y); }
 
   // ---- sim/exploration ----

@@ -11,7 +11,7 @@ world. All game data lives in typed lists under `src/content/`.
 | **Run** | one `Game` instance | one house, until retirement or abandonment | `wanderhaus-save-v1` |
 | **Family** | the `meta` singleton in `game/family/meta.ts` | forever, across generations | `wanderhaus-meta-v1` |
 
-The run holds the seed, vehicle, grid, cargo, coins, towns, and run stats. The family holds
+The run holds the seed, vehicle, grid, cargo, coins, towns, town prosperity/memory, resident bonds, passengers, and run stats. The family holds
 generation, Legacy Sparks, perks, Scrapbook, postcards, milestones, cosmetics, and lifetime
 totals. Retiring folds the run into the family and creates a new `Game`; the family survives.
 
@@ -77,7 +77,7 @@ src/
     nodes.ts                  harvestable world objects
     mobs.ts                   critters
     landmarks.ts              points of interest and rewards
-    residents.ts              Homeport's first-slice people (name, role, quirk)
+    residents.ts              Homeport's hand-written people + procedural name/line vocab
     locomotion.ts             wheels/legs/fins per-ground speed
     frames.ts                 chassis floors
     parts/                    vehicle modules, one file per category
@@ -105,7 +105,7 @@ src/
       weapons.ts                firing, damage, explosions
       critters.ts               mob spawning and AI
       towns.ts                  docking, prices, stock, blueprints, rumours
-      residents.ts              one active settlement's schedules, traits, reactions, memory, cat
+      residents.ts              all nearby settlements: rosters, schedules, path routes, traits, memory, cats, movers
       exploration.ts            landmark visits and buffs
       effects.ts                particles, popups, camera shake
       input.ts                  keys, clicks, waypoints, zoom
@@ -124,8 +124,8 @@ src/
       parts/<category>.ts       per-part artwork, keyed by part id (cargo, comfort, core,
                                 defense, harvest, power, processing, weapons) + types.ts
     world/                    procedural world
-      world.ts                  World: chunks, terrain, towns, landmarks, spawning
-      settlement.ts             deterministic houses, field, well, gate and watch anchors
+      world.ts                  World: chunks, terrain, tiered towns, landmarks, spawning and settlement clearings
+      settlement.ts             deterministic streets, footpaths, houses, anchors and local architecture style
       noise.ts                  seeded hash/noise helpers
       textures.ts               ground texture painting
     family/                   persistent family systems

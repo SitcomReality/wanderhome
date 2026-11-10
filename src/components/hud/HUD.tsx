@@ -50,6 +50,18 @@ export function HUD({ game, tick, open, onHide }: { game: Game; tick: number; op
             <span className="whitespace-nowrap text-stone-500">· 🎯 plan & locks</span>
           </div>
         </button>
+        {game.moveOffer && (
+          <button onClick={() => open('trade')} title="A resident is waiting for a lift; open the town panel" className="pointer-events-auto w-fit max-w-md rounded-xl border border-amber-300/30 bg-amber-400/10 px-2 py-1 text-left text-[11px] backdrop-blur transition hover:border-amber-300/60">
+            <span className="font-black text-amber-100">🧳 {game.moveOffer.def.name}</span>
+            <span className="text-stone-400"> wants a lift to {game.moveOffer.toName}</span>
+          </button>
+        )}
+        {game.movers.length > 0 && (
+          <button onClick={() => open('trade')} title="Passengers riding with the house" className="pointer-events-auto w-fit max-w-md rounded-xl border border-sky-300/25 bg-sky-400/10 px-2 py-1 text-left text-[11px] backdrop-blur transition hover:border-sky-300/50">
+            <span className="font-black text-sky-100">🚚 {game.movers.map((m) => m.def.name).join(', ')}</span>
+            <span className="text-stone-400"> riding to {game.movers.map((m) => m.toName).join(', ')}</span>
+          </button>
+        )}
         {game.goal && (
           <button onClick={() => open('stores')} title="Open Supplies & Plans (I)" className={`pointer-events-auto w-fit max-w-md rounded-xl border px-2 py-1.5 text-left backdrop-blur transition hover:border-amber-300/50 ${goalReady(game) ? 'border-emerald-300/40 bg-emerald-400/10' : 'border-amber-300/25 bg-amber-400/[0.07]'}`}>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">

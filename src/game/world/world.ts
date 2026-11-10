@@ -11,7 +11,14 @@ export const LM_CELL = 34; // tiles per landmark cell
 export interface ResNode {
   key: string; kind: string; x: number; y: number; hp: number; maxHp: number; res: string; size: number; shake: number; seedv: number;
 }
-export interface Town { key: string; name: string; x: number; y: number; tx: number; ty: number; biome: string; mod: number; seedv: number }
+/** Settlements come in four sizes, from a couple of cottages to a walled city. */
+export type SettlementTier = 'hamlet' | 'village' | 'town' | 'city';
+/** Footprint radii, shared by layout, town art and the vegetation clearing around a settlement. */
+export const TOWN_RADIUS: Record<SettlementTier, number> = { hamlet: 54, village: 82, town: 124, city: 182 };
+export interface Town {
+  key: string; name: string; x: number; y: number; tx: number; ty: number; biome: string; mod: number; seedv: number;
+  tier: SettlementTier; pop: number;
+}
 export interface Landmark { key: string; def: LandmarkDef; x: number; y: number; tx: number; ty: number; seedv: number; biome: string }
 
 interface Chunk { cx: number; cy: number; canvas: HTMLCanvasElement; terrain: string[]; nodes: ResNode[] }
@@ -26,6 +33,7 @@ export class World {
   spawnTX = 0; spawnTY = 0;
   homeTown!: Town;
   private lmCache = new Map<string, Landmark | null>();
+  private townCache = new Map<string, Town | null>();
 
   constructor(seed: number) {
     this.seed = seed;
@@ -81,12 +89,12 @@ export class World {
         const ty = Math.round(Math.sin((a / 16) * Math.PI * 2) * r);
         if (startOk(this.rawTerrain(tx, ty)) && startOk(this.rawTerrain(tx + 8, ty)) && startOk(this.rawTerrain(tx + 4, ty + 3))) {
           this.spawnTX = tx; this.spawnTY = ty;
-          this.homeTown = { key: 'home', name: 'Homeport', tx: tx + 9, ty: ty + 2, x: (tx + 9.5) * TILE, y: (ty + 2.5) * TILE, biome: 'grass', mod: 1, seedv: 0.5 };
+          this.homeTown = { key: 'home', name: 'Homeport', tx: tx + 9, ty: ty + 2, x: (tx + 9.5) * TILE, y: (ty + 2.5) * TILE, biome: 'grass', mod: 1, seedv: 0.5, tier: 'village', pop: 6 };
           return;
         }
       }
     }
-    this.homeTown = { key: 'home', name: 'Homeport', tx: 9, ty: 2, x: 9.5 * TILE, y: 2.5 * TILE, biome: 'grass', mod: 1, seedv: 0.5 };
+    this.homeTown = { key: 'home', name: 'Homeport', tx: 9, ty: 2, x: 9.5 * TILE, y: 2.5 * TILE, biome: 'grass', mod: 1, seedv: 0.5, tier: 'village', pop: 6 };
   }
 
   terrainAtTile(tx: number, ty: number): string {
@@ -167,6 +175,14 @@ export class World {
   private pickNode(t: string, r: number, tx: number, ty: number): string | null {
     const b = BIOME[t];
     if (!b) return null;
+    // Keep the settlement footprint clear: no tree growing through the town hall.
+    const wx = (tx + 0.5) * TILE, wy = (ty + 0.5) * TILE;
+    if (this.homeTown && Math.hypot(wx - this.homeTown.x, wy - this.homeTown.y) < TOWN_RADIUS[this.homeTown.tier] + 46) return null;
+    const rx = Math.floor(tx / REGION), ry = Math.floor(ty / REGION);
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const town = this.townInRegion(rx + dx, ry + dy);
+      if (town && Math.hypot(wx - town.x, wy - town.y) < TOWN_RADIUS[town.tier] + 46) return null;
+    }
     const dist = Math.hypot(tx - this.spawnTX, ty - this.spawnTY);
     const rich = Math.min(2, 1 + dist / 1500);
     const land = b.band !== 'deep' && b.band !== 'shallow' && !b.noWalk;
@@ -200,16 +216,27 @@ export class World {
 
   // ---------------- towns ----------------
   townInRegion(rx: number, ry: number): Town | null {
+    const cacheKey = rx + ':' + ry;
+    if (this.townCache.has(cacheKey)) return this.townCache.get(cacheKey)!;
     const s = this.seed;
-    if (hash2(rx, ry, s + 9000) > 0.62) return null;
+    if (hash2(rx, ry, s + 9000) > 0.66) { this.townCache.set(cacheKey, null); return null; }
     const tx = rx * REGION + 6 + Math.floor(hash2(rx, ry, s + 9001) * (REGION - 12));
     const ty = ry * REGION + 6 + Math.floor(hash2(rx, ry, s + 9002) * (REGION - 12));
     const t = this.rawTerrain(tx, ty);
-    if (BIOME[t]?.noTowns) return null;
-    if (Math.hypot(tx - this.homeTown.tx, ty - this.homeTown.ty) < 25) return null;
-    const n = hash2(rx, ry, s + 9003), m = hash2(rx, ry, s + 9004);
+    if (BIOME[t]?.noTowns) { this.townCache.set(cacheKey, null); return null; }
+    if (Math.hypot(tx - this.homeTown.tx, ty - this.homeTown.ty) < 25) { this.townCache.set(cacheKey, null); return null; }
+    const n = hash2(rx, ry, s + 9003), m = hash2(rx, ry, s + 9004), size = hash2(rx, ry, s + 9006);
     const name = SYL_A[Math.floor(n * SYL_A.length)] + SYL_B[Math.floor(m * SYL_B.length)];
-    return { key: rx + ':' + ry, name, tx, ty, x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, biome: t, mod: 0.85 + hash2(rx, ry, s + 9005) * 0.3, seedv: n };
+    // Most places are small. A city should feel like something you remember finding.
+    const tier: SettlementTier = size < 0.46 ? 'hamlet' : size < 0.76 ? 'village' : size < 0.94 ? 'town' : 'city';
+    const popRoll = hash2(rx, ry, s + 9007);
+    const pop = tier === 'hamlet' ? 2 + Math.floor(popRoll * 2)
+      : tier === 'village' ? 4 + Math.floor(popRoll * 3)
+      : tier === 'town' ? 7 + Math.floor(popRoll * 6)
+      : 14 + Math.floor(popRoll * 12);
+    const town = { key: rx + ':' + ry, name, tx, ty, x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, biome: t, mod: 0.85 + hash2(rx, ry, s + 9005) * 0.3, seedv: n, tier, pop };
+    this.townCache.set(cacheKey, town);
+    return town;
   }
   townsNear(x: number, y: number, radius: number): Town[] {
     const out: Town[] = [];

@@ -30,7 +30,7 @@ npm run build
 
 - `src/game/` — simulation: driving, navigation, harvest, weapons, critters, towns, exploration, workshop, offline, persistence.
 - `src/game/family/` — the persistent layer: generations, Legacy Sparks, Scrapbook, postcards, milestones, visitors, coffee, family shelf.
-- `src/content/` — all game data (27 biomes, 15 critters, 16 landmarks, 41 nodes, 75 modules, 9 locomotion types, 6 frames, Homeport's first residents). See `src/content/MODDING.md`.
+- `src/content/` — all game data (27 biomes, 15 critters, 16 landmarks, 41 nodes, 75 modules, 9 locomotion types, 6 frames, procedural settlement residents). See `src/content/MODDING.md`.
 - `src/components/` — React UI: HUD, workshop, town, family, settings, title/offline screens.
 - `docs/architecture.md` — code map, runtime lifecycle and invariants.
 

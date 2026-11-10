@@ -22,8 +22,10 @@ export function Minimap({ game, tick }: { game: Game; tick: number }) {
       const [x, y] = toM(t.x, t.y);
       const kt = game.towns[t.key];
       const hasPin = kt?.stock.some((id) => game.pins.includes(id) && !game.known.includes(id));
-      ctx.fillStyle = '#000'; ctx.fillRect(x - 2.5, y - 2.5, 5, 5);
-      ctx.fillStyle = hasPin ? '#7fd1e8' : kt ? '#ffd166' : '#b8b8b8'; ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+      const size = t.tier === 'city' ? 3.4 : t.tier === 'town' ? 2.7 : t.tier === 'village' ? 2.1 : 1.6;
+      ctx.fillStyle = '#000'; ctx.fillRect(x - size - 1, y - size - 1, size * 2 + 2, size * 2 + 2);
+      ctx.fillStyle = hasPin ? '#7fd1e8' : kt ? '#ffd166' : '#b8b8b8'; ctx.fillRect(x - size, y - size, size * 2, size * 2);
+      if (t.tier === 'city') { ctx.fillStyle = '#ffd166'; ctx.fillRect(x - 0.6, y - 3.4, 1.2, 1.2); }
     }
     const span = (MM / 2) * TILE * TPP;
     for (const k in game.visited) {

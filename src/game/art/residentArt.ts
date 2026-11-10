@@ -48,10 +48,26 @@ export function drawResident(ctx: C, r: Resident, t: number) {
     ctx.fillStyle = r.def.accent; ctx.beginPath(); ctx.arc(x - 2, y - 11.8, 1.3, 0, TAU); ctx.fill();
     ctx.beginPath(); ctx.arc(x + 2, y - 11.8, 1.3, 0, TAU); ctx.fill();
     ctx.fillStyle = '#ffe08a'; ctx.fillRect(x - 1.8 + look, y - 9.3, 0.8, 0.8); ctx.fillRect(x + 1 + look, y - 9.3, 0.8, 0.8);
+  } else if (r.def.role === 'baker') {
+    ctx.fillStyle = '#f5efe0'; ctx.fillRect(x - 2.2, y - 11.2, 4.4, 0.9);
+    ctx.beginPath(); ctx.arc(x - 1.2, y - 12.2, 1.3, 0, TAU); ctx.arc(x + 1.2, y - 12.2, 1.3, 0, TAU); ctx.arc(x, y - 13.2, 1.2, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(245,239,224,0.8)'; ctx.fillRect(x - 2.0, y - 6.8, 4.2, 2);
+    drawRollingPin(ctx, r, x + 2.5, y - 6.2);
+  } else if (r.def.role === 'courier') {
+    ctx.fillStyle = r.def.accent; ctx.fillRect(x - 2.4, y - 11.6, 4.8, 1.2);
+    ctx.fillStyle = '#6d5a4d'; ctx.fillRect(x - 3.2, y - 7.2, 1.4, 3.6);
+    ctx.fillStyle = '#f3e3c3'; ctx.fillRect(x - 3.1, y - 6.5, 1.2, 1.4);
+    ctx.fillStyle = r.def.accent; ctx.fillRect(x + 2.2, y - 7.6, 1.2, 3.2);
+    ctx.fillStyle = '#f3e3c3'; ctx.fillRect(x + 2.4, y - 7.3, 0.8, 0.9);
   } else {
     drawWatcher(ctx, r, x, y, t);
   }
 
+  if (r.activity.includes('bundle')) {
+    ctx.fillStyle = '#8d6e63'; ctx.fillRect(x - 5, y - 1.8, 3, 2.4);
+    ctx.fillStyle = '#d9b88a'; ctx.fillRect(x - 4.4, y - 2.8, 1.8, 1);
+    ctx.fillStyle = '#5d4037'; ctx.fillRect(x - 4.2, y - 1.2, 0.6, 1.6);
+  }
   if (r.state === 'react') drawReaction(ctx, r, x, y, t);
 
   if (r.state === 'loot') {
@@ -106,6 +122,17 @@ function drawHammer(ctx: C, r: Resident, hx: number, hy: number) {
   ctx.restore();
 }
 
+function drawRollingPin(ctx: C, r: Resident, hx: number, hy: number) {
+  const working = r.state === 'work';
+  const rock = working ? Math.sin(r.anim * 4.2) * 0.35 : 0.1;
+  ctx.save(); ctx.translate(hx, hy); ctx.rotate(-0.55 + rock);
+  ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 5); ctx.stroke();
+  ctx.fillStyle = '#a1683f'; ctx.fillRect(-1.8, 4.5, 3.6, 1.3);
+  ctx.fillStyle = '#d9b88a'; ctx.fillRect(-2.4, 4.7, 0.7, 0.9); ctx.fillRect(1.7, 4.7, 0.7, 0.9);
+  ctx.restore();
+}
+
 function drawWatcher(ctx: C, r: Resident, x: number, y: number, t: number) {
   ctx.fillStyle = '#4f6070'; ctx.beginPath(); ctx.moveTo(x - 3, y - 10); ctx.lineTo(x, y - 13.2); ctx.lineTo(x + 3, y - 10); ctx.fill();
   ctx.fillStyle = '#ffd166'; ctx.fillRect(x - 1.2, y - 10.6, 0.7, 0.7);
@@ -147,6 +174,13 @@ function drawResting(ctx: C, r: Resident, x: number, y: number, s: number, t: nu
   } else if (r.def.role === 'kid') {
     ctx.fillStyle = r.def.accent; ctx.beginPath(); ctx.arc(x - 2, y - 10.4, 1.2, 0, TAU); ctx.fill();
     ctx.beginPath(); ctx.arc(x + 2, y - 10.4, 1.2, 0, TAU); ctx.fill();
+  } else if (r.def.role === 'baker') {
+    ctx.fillStyle = '#f5efe0'; ctx.fillRect(x - 2.2, y - 10, 4.4, 0.9);
+    ctx.beginPath(); ctx.arc(x - 1.2, y - 11, 1.2, 0, TAU); ctx.arc(x + 1.2, y - 11, 1.2, 0, TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(245,239,224,0.8)'; ctx.fillRect(x - 2.0, y - 5.8, 4.2, 2);
+  } else if (r.def.role === 'courier') {
+    ctx.fillStyle = r.def.accent; ctx.fillRect(x - 2.4, y - 10.4, 4.8, 1.1);
+    ctx.fillStyle = '#6d5a4d'; ctx.fillRect(x - 3.2, y - 6, 1.4, 3.4);
   } else {
     ctx.fillStyle = '#8d6e63'; ctx.fillRect(x + 3.5, y - 7, 1, 7);
     const lx = x + 4.8, ly = y - 5 + Math.sin(t * 2 + r.seed) * 0.3;

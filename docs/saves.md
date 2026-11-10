@@ -25,20 +25,23 @@ Backup keys are written before destructive operations:
 Follow this pattern for any new destructive action: copy the old value first, never silently
 discard player data.
 
-## Run save (version 5)
+## Run save (version 6)
 
 - Written by `game/sim/persistence.ts → save()` every 10 s, on tab hide/unload, and at key
   transitions (start, new game, retirement).
 - Shape: `v`, `gen`, `seedStr`, coins/resources/`keep`, `collectCap`, `goal`, `seenRes`, grid
   dimensions and cells, locomotion/frame and owned ones, `known`, `pins`, `rumours`, vehicle
   position/HP, settings, stats, towns, `residentMemory`, rates, `time`, `lastSave`, `visited`,
-  buffs, run biomes/time, crew, and any waiting visitor. `save()` is the authoritative list.
+  buffs, run biomes/time, crew, and any waiting visitor. Settlement state is carried in
+  `townWealth` (0–100 per town), `townMemory`, `residentBonds`, `movers`, `moveOffer`,
+  `departedByTown` and `movedIn`. `save()` is the authoritative list.
 - `collectCap` is a per-resource upper collection limit (`-1` = no limit). `goal` is a
   content-id reference (`kind` + `id`) to the active build plan; its cost is derived from
   content, not stored. Parking (`parked`/`parkUntil`), town-watch cooldowns, resident
-  positions and schedules, and settling spoils are temporary and deliberately not saved;
-  residents are rebuilt from the clock when a save loads. Loading a save resumes normal
-  autopilot.
+  positions, routines, cats and settling spoils are temporary and deliberately not saved;
+  rosters and positions are rebuilt deterministically from the town seed and clock when a
+  save loads. Memories, bonds, prosperity and accepted moving days are saved. Loading a save
+  resumes normal autopilot.
 - Loaded by `bootGame()` → `migrateRunSave()` → `new Game(seed, save)` → `applySave()`.
 - `applySave()` filters unknown content ids, repairs the cockpit, fills missing resources,
   clamps invalid values, and recomputes derived stats. Keep that defensive behaviour: old or
@@ -51,6 +54,9 @@ discard player data.
 2. Write it in `sim/persistence.ts → save()`.
 3. Increment `SAVE_VERSION` in `game/saveTransfer.ts`.
 4. Add a `v < N` step to `migrateRunSave()`; it spreads the input, so unknown fields survive.
+   The v5 → v6 step adds empty `townWealth`, `townMemory`, `residentBonds`, `movers`,
+   `moveOffer`, `departedByTown` and `movedIn` containers. `applySave()` seeds
+   `townMemory.home` from the old `residentMemory`, so Homeport's familiar badge survives.
 5. Test a previous-version save, the current save, and an export/import round trip.
 
 If a content id is renamed or removed, map old → new in `migrateRunSave()`/`applySave()`.
@@ -116,7 +122,7 @@ import the caller reloads the page.
 
 ## Compatibility checklist
 
-- [ ] An old run save still loads.
+- [ ] An old (v5) run save still loads; Homeport's old `residentMemory` becomes town memory.
 - [ ] An old meta record still normalizes (or is backed up if unreadable).
 - [ ] Export → import round-trips.
 - [ ] No `wanderhaus-*` key or `format: "wanderhaus"` rename.

@@ -8,10 +8,47 @@ import { meta } from '../family/meta';
 import { hash2 } from '../world/noise';
 import { sfx } from '../sfx';
 import { TILE, Town } from '../world/world';
+import { settlementRadius } from '../world/settlement';
 import { goalProtect } from './plan';
 
-/** No critters spawn inside this radius of a town, and a stopped house is safe here. */
-export const TOWN_SAFE_RADIUS = 180;
+/** Base safe ring; larger settlements push their watch farther out. */
+export const TOWN_SAFE_RADIUS = 160;
+
+export function townSafeRadius(t: Town) { return Math.round(TOWN_SAFE_RADIUS + settlementRadius(t) * 0.42); }
+
+export type ProsperityTier = { at: number; label: string; icon: string; blurb: string };
+export const PROSPERITY: ProsperityTier[] = [
+  { at: 0, label: 'humble', icon: '🌱', blurb: 'A few roofs, a well, and enough to get by' },
+  { at: 25, label: 'comfortable', icon: '🪴', blurb: 'Flower boxes, a second market stall, and a bench' },
+  { at: 50, label: 'prosperous', icon: '🏮', blurb: 'Lit windows, extra wares, and a busier watch' },
+  { at: 75, label: 'flourishing', icon: '✨', blurb: 'Bunting, painted shutters, and a proper market' },
+  { at: 100, label: 'golden', icon: '👑', blurb: 'The kind of place other towns tell stories about' },
+];
+
+export function prosperityLevel(wealth: number) {
+  const v = Math.max(0, Math.min(100, wealth));
+  let level = 0;
+  for (let i = 0; i < PROSPERITY.length; i++) if (v >= PROSPERITY[i].at) level = i;
+  return { value: v, level, next: level < PROSPERITY.length - 1 ? PROSPERITY[level + 1].at : 100, ...PROSPERITY[level] };
+}
+
+export function townProsperity(g: Game, t: Town) { return prosperityLevel(g.townWealth[t.key] ?? 0); }
+
+/** Trade, generous purchases and new residents all feed a town's little budget. */
+export function addTownWealth(g: Game, t: Town, amount: number) {
+  if (!(amount > 0)) return;
+  const old = g.townWealth[t.key] ?? 0;
+  const before = prosperityLevel(old).level;
+  const next = Math.min(100, old + amount);
+  g.townWealth[t.key] = next;
+  const after = prosperityLevel(next).level;
+  if (after > before) {
+    g.stockCache.delete(t.key);
+    if (g.played && Math.hypot(t.x - g.v.x, t.y - g.v.y) < 900) {
+      g.addLog(`🏘️ ${t.name} feels a little more ${PROSPERITY[after].label}. ${PROSPERITY[after].blurb}.`, '#ffe8a3');
+    }
+  }
+}
 
 export interface TownDefense { name: string; range: number; damage: number; rate: number; color: string }
 
@@ -46,7 +83,10 @@ export function townStock(g: Game, t: Town): string[] {
   const ok = (p: (typeof PARTS)[number]) => p.shop && dist >= TIER_DIST[p.shop.tier];
   const local = PARTS.filter((p) => ok(p) && matchesWhere(p.shop!.where, BIOME[biome]));
   const sorted = local.map((p, i) => ({ p, k: hash2(seedBase, i, g.world.seed + 4242) })).sort((a, b) => a.k - b.k).map((x) => x.p.id);
-  const count = t.key === 'home' ? 3 : 3 + Math.floor(hash2(seedBase, 99, g.world.seed) * 3);
+  const wealthLevel = prosperityLevel(g.townWealth[t.key] ?? 0).level;
+  const wealthBonus = wealthLevel >= 3 ? 2 : wealthLevel >= 1 ? 1 : 0;
+  const tierBonus = t.tier === 'city' ? 2 : t.tier === 'town' ? 1 : 0;
+  const count = (t.key === 'home' ? 3 : 3 + Math.floor(hash2(seedBase, 99, g.world.seed) * 3)) + wealthBonus + tierBonus;
   const out = sorted.slice(0, count);
   if (hash2(seedBase, 77, g.world.seed) < 0.4) {
     const wild = PARTS.filter((p) => ok(p) && !out.includes(p.id));
@@ -60,7 +100,7 @@ export function townStock(g: Game, t: Town): string[] {
 export function townDefense(g: Game, t: Town): TownDefense {
   const goods = BIOME[t.biome]?.goods?.cheap ?? [];
   let damage = 8 + t.mod * 5;
-  let range = 210 + t.mod * 20;
+  let range = 210 + t.mod * 20 + settlementRadius(t) * 0.16;
   let rate = 0.9;
   if (goods.includes('iron') || goods.includes('metal')) { damage += 4; range += 15; }
   if (goods.includes('stone')) { damage += 2; range += 10; }
@@ -75,6 +115,8 @@ export function townDefense(g: Game, t: Town): TownDefense {
     else if (m.shield || (m.hp ?? 0) > 0) damage += 2;
     else if (m.spikes) damage += 2;
   }
+  const wealth = g.townWealth[t.key] ?? 0;
+  damage += wealth * 0.08; range += wealth * 0.18;
   const diff = g.difficulty(t.x, t.y);
   damage = Math.round(damage * (0.65 + diff * 0.7));
   const color = goods.includes('crystal') ? '#b07cff' : goods.includes('sulfur') || goods.includes('obsidian') ? '#f2e14c' : goods.includes('iron') || goods.includes('metal') ? '#cfd8dc' : '#ffd166';
@@ -82,7 +124,7 @@ export function townDefense(g: Game, t: Town): TownDefense {
 }
 
 export function inTownSafeZone(g: Game, x: number, y: number, extra = 0): boolean {
-  return g.nearTowns.some((t) => Math.hypot(t.x - x, t.y - y) <= TOWN_SAFE_RADIUS + extra);
+  return g.nearTowns.some((t) => Math.hypot(t.x - x, t.y - y) <= townSafeRadius(t) + extra);
 }
 
 /** Towns shoot the nearest critter in range. Kills use the normal loot path. */
@@ -98,7 +140,8 @@ export function updateTownDefense(g: Game, dt: number) {
     }
     if (!best) { g.townDefCd[t.key] = 0.2; continue; }
     g.townDefCd[t.key] = 1 / def.rate;
-    const ox = t.x + (t.seedv > 0.5 ? 30 : -30), oy = t.y - 12;
+    const wp = g.settlementPlan(t).watch;
+    const ox = wp.x, oy = wp.y - 7;
     const ang = Math.atan2(best.y - oy, best.x - ox);
     const speed = 420;
     g.projectiles.push({ kind: 'bullet', x: ox, y: oy, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, dmg: def.damage, life: def.range / speed + 0.15, target: null, color: def.color, town: true });
@@ -125,6 +168,7 @@ export function buyBlueprint(g: Game, t: Town, id: string) {
   if (g.coins < price) return false;
   g.coins -= price;
   g.known.push(id);
+  addTownWealth(g, t, 2.5);
   onDiscover(g, 'blueprints', id);
   meta.lifetime.bought++;
   sfx('buy');
@@ -159,6 +203,8 @@ export function sell(g: Game, t: Town, r: Res, n: number) {
   const c = Math.floor(got);
   if (sold) {
     g.coins += c; g.stats.earned += c;
+    addTownWealth(g, t, sold * 0.22 + c * 0.008);
+    if (g.townMemory[t.key]) g.townMemory[t.key].trades += sold;
     g.gainPopup(g.v.x, g.v.y - 14, 'coins', c);
     g.burst(g.v.x, g.v.y - 10, Math.min(30, 4 + sold), ['#ffd166', '#fff3b0', '#f4a261'], 90, 0.7, 1.6, 4, 60);
     sfx('coin');
@@ -176,7 +222,7 @@ export function buy(g: Game, t: Town, r: Res, n: number) {
     g.coins -= p; g.addRes(r, 1); bought++;
     sat[r] = Math.min(2.5, (sat[r] ?? 1) * 1.006);
   }
-  if (bought) { sfx('buy'); g.recordKnown(t); }
+  if (bought) { addTownWealth(g, t, bought * 0.1); if (g.townMemory[t.key]) g.townMemory[t.key].trades += bought; sfx('buy'); g.recordKnown(t); }
   return bought;
 }
 
@@ -184,7 +230,7 @@ export function recordKnown(g: Game, t: Town) {
   const sell = zeroRes();
   for (const r of RES_LIST) sell[r] = g.townPrice(t, r);
   if (!g.towns[t.key]) { g.stats.townsVisited++; onDiscover(g, 'towns', `${g.seedStr}:${t.key}`, { name: t.name, biome: t.biome }); }
-  g.towns[t.key] = { name: t.name, x: t.x, y: t.y, biome: t.biome, sell, t: g.time, stock: g.townStock(t) };
+  g.towns[t.key] = { name: t.name, x: t.x, y: t.y, biome: t.biome, sell, t: g.time, stock: g.townStock(t), tier: t.tier, pop: t.pop };
 }
 
 export function bestKnown(g: Game, r: Res, excludeKey?: string) {
@@ -241,7 +287,7 @@ export function updateDock(g: Game, dt: number) {
       }
       const pinned = g.townStock(dock).filter((id) => g.pins.includes(id) && !g.known.includes(id));
       if (pinned.length) g.addLog(`📌 ${dock.name} sells your wishlisted ${pinned.map((p) => PART[p].name).join(', ')}!`, '#7fd1e8');
-      if (dock.key === 'home') g.residentsVisit();
+      g.residentsVisit(dock);
       if (g.tradeRun && g.tradeRun.key === dock.key) {
         g.dockPause = 3;
         const got = g.autoSellNow(dock);
